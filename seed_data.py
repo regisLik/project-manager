@@ -4,118 +4,78 @@ import random
 
 def seed_projects():
     with app.app_context():
-        print("Seeding database with virtual projects...")
+        print("Seeding database with 10 virtual projects...")
         
-        # Define some virtual projects
-        projects_data = [
-            {
-                "name": "Refonte Site Web Corporate",
-                "category": "Web",
-                "version": "V2.0.0",
-                "phase": "Validation",
-                "status": "Review",
-                "progress": 90,
-                "deadline_offset": 7, # 7 days from now
-                "description": "Refonte complète du site institutionnel avec nouvelle charte graphique.",
-                "cost": 15000,
-                "start_offset": -30
-            },
-            {
-                "name": "Application Mobile Client",
-                "category": "Mobile",
-                "version": "V1.0.0",
-                "phase": "Development",
-                "status": "En cours",
-                "progress": 45,
-                "deadline_offset": 60,
-                "description": "Développement de l'application mobile iOS et Android pour les clients fidèles.",
-                "cost": 25000,
-                "start_offset": -15
-            },
-            {
-                "name": "Migration Cloud Azure",
-                "category": "Infrastructure",
-                "version": "V1.1.0",
-                "phase": "Testing",
-                "status": "Review",
-                "progress": 95,
-                "deadline_offset": 2,
-                "description": "Migration des serveurs on-premise vers Azure.",
-                "cost": 5000,
-                "start_offset": -45
-            },
-            {
-                "name": "API Gateway Integration",
-                "category": "Backend",
-                "version": "V1.0.2",
-                "phase": "Deployment",
-                "status": "Done",
-                "progress": 100,
-                "deadline_offset": -10, # Past deadline
-                "description": "Mise en place d'une passerelle API pour sécuriser les échanges.",
-                "cost": 8000,
-                "start_offset": -60
-            },
-            {
-                "name": "Dashboard Analytics IA",
-                "category": "Data Science",
-                "version": "V0.5.0",
-                "phase": "Intake",
-                "status": "Intake",
-                "progress": 10,
-                "deadline_offset": 90,
-                "description": "Création d'un tableau de bord prédictif basé sur l'IA.",
-                "cost": 12000,
-                "start_offset": -5
-            },
-            {
-                "name": "Audit Sécurité Q4",
-                "category": "Security",
-                "version": "V1.0.0",
-                "phase": "Audit",
-                "status": "Review",
-                "progress": 80,
-                "deadline_offset": 3,
-                "description": "Audit de sécurité trimestriel des infrastructures critiques.",
-                "cost": 3000,
-                "start_offset": -10
-            }
+        # Clear existing data (optional, comment out if you want to append)
+        # db.drop_all()
+        # db.create_all()
+        
+        categories = ['Web', 'Mobile', 'Data Science', 'Infrastructure', 'Security', 'Backend', 'Frontend', 'DevOps']
+        phases = ['Intake', 'Planning', 'Development', 'Testing', 'Review', 'Deployment', 'Done']
+        statuses = ['Not started', 'In progress', 'En cours', 'Review', 'Done', 'Stopped', 'Gel']
+        
+        projects_list = [
+            ("E-commerce Platform Revamp", "Web", "Refonte complète de la plateforme e-commerce."),
+            ("Customer Loyalty App", "Mobile", "Application mobile pour la fidélisation client."),
+            ("AI Recommendation Engine", "Data Science", "Moteur de recommandation produit basé sur l'IA."),
+            ("Cloud Migration Phase 2", "Infrastructure", "Migration des bases de données vers le cloud."),
+            ("Security Audit 2025", "Security", "Audit complet et mise en conformité."),
+            ("Internal HR Portal", "Web", "Portail RH pour la gestion des congés et notes de frais."),
+            ("API Gateway Implementation", "Backend", "Mise en place d'une API Gateway centralisée."),
+            ("Design System V2", "Frontend", "Mise à jour du Design System pour uniformiser les UI."),
+            ("CI/CD Pipeline Optimization", "DevOps", "Optimisation des pipelines de déploiement."),
+            ("Legacy System Decommissioning", "Infrastructure", "Arrêt et archivage des anciens systèmes.")
         ]
 
-        for p_data in projects_data:
+        for i, (name, category, desc) in enumerate(projects_list):
             # Create Project
-            project = Project(name=p_data["name"], category=p_data["category"])
+            project = Project(name=name, category=category)
             db.session.add(project)
             db.session.commit()
             
+            # Randomize status and progress
+            status = random.choice(statuses)
+            phase = random.choice(phases)
+            progress = random.randint(0, 100)
+            
+            if status == 'Done':
+                progress = 100
+                phase = 'Done'
+            elif status == 'Not started':
+                progress = 0
+                phase = 'Intake'
+            
             # Calculate dates
             now = datetime.now().date()
-            deadline = now + timedelta(days=p_data["deadline_offset"])
-            start_date = now + timedelta(days=p_data["start_offset"])
+            start_offset = random.randint(-100, -10)
+            duration = random.randint(30, 180)
+            
+            start_date = now + timedelta(days=start_offset)
+            deadline = start_date + timedelta(days=duration)
             
             # Create Version
             version = ProjectVersion(
                 project_id=project.id,
-                version_number=p_data["version"],
-                phase=p_data["phase"],
-                status=p_data["status"],
+                version_number=f"V{random.randint(0,2)}.{random.randint(0,9)}.{random.randint(0,9)}",
+                phase=phase,
+                status=status,
                 app_status="Working",
                 integration_level="Dev",
                 hosting="Cloud",
                 accessibility="Online",
-                description=p_data["description"],
-                progress=p_data["progress"],
+                description=desc,
+                progress=progress,
                 deadline=deadline,
                 start_date=start_date,
-                duration_days=abs(p_data["deadline_offset"] - p_data["start_offset"]),
-                cost=p_data["cost"],
+                duration_days=duration,
+                cost=random.randint(5000, 50000),
                 cost_type="One-time",
-                team_members="Alice, Bob, Charlie"
+                team_members="Alice, Bob, Charlie, David"
             )
             db.session.add(version)
         
         db.session.commit()
-        print("Successfully added 6 virtual projects.")
+        print("Successfully added 10 virtual projects.")
 
 if __name__ == "__main__":
     seed_projects()

@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for, flash
+from flask import Flask, render_template, request, redirect, url_for, flash, make_response
 from flask_sqlalchemy import SQLAlchemy
 import os
 from datetime import datetime, timedelta
@@ -316,30 +316,34 @@ def dashboard():
         'today': now.day
     }
             
-    # Get upcoming deliverables (next 3 projects by deadline, including those in Review)
+    # Get upcoming deliverables (Only Review and Done status)
     upcoming_deliverables = []
     for p in projects:
         v = p.latest_version
         if v:
-            # Include if in Review OR (not Done AND has future deadline)
-            if v.status == 'Review' or (v.status != 'Done' and v.deadline and v.deadline >= datetime.now().date()):
+            # User request: Only display if current status is Review or Done
+            if v.status in ['Review', 'Done']:
                 upcoming_deliverables.append(p)
     
     # Sort by deadline (Review projects without deadline go to end or handle as needed)
     # Prioritize projects in 'Review' status, then by deadline
     def sort_key(p):
         v = p.latest_version
-        is_review = 0 if v.status == 'Review' else 1
+        # Prioritize Review (0) over Done (1)
+        status_priority = 0 if v.status == 'Review' else 1
         deadline = v.deadline if v.deadline else datetime.max.date()
-        return (is_review, deadline)
+        return (status_priority, deadline)
 
     upcoming_deliverables.sort(key=sort_key)
-    upcoming_deliverables = upcoming_deliverables[:3]
+    # Increase limit to ensure all Review projects are likely seen, or at least more of them
+    upcoming_deliverables = upcoming_deliverables[:10]
     
-    return render_template('dashboard.html', stats=stats, projects=projects, 
+    response = make_response(render_template('dashboard.html', stats=stats, projects=projects, 
                            calendar=cal_data,
                            upcoming_deliverables=upcoming_deliverables,
-                           status_counts=status_counts)
+                           status_counts=status_counts))
+    response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+    return response
 
 @app.route('/projects')
 def projects_list():
