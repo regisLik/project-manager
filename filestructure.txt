@@ -1,0 +1,17 @@
+|-- .gitignore
+|-- app.py
+|-- instance
+    |-- projects.db
+|-- README.md
+|-- requirements.txt
+|-- seed_data.py
+|-- templates
+    |-- base.html
+    |-- dashboard.html
+    |-- gantt.html
+    |-- projects.html
+    |-- project_detail.html
+    |-- project_form.html
+    |-- stats.html
+|-- __pycache__
+    |-- app.cpython-313.pyc

@@ -1,0 +1,355 @@
+{% extends "base.html" %}
+
+{% block header_title %}Vue d'ensemble{% endblock %}
+
+{% block main_content %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<div class="flex h-full p-6 gap-8">
+    <!-- Left Column: Stats & Projects -->
+    <div class="flex-1 flex flex-col min-w-0 overflow-hidden">
+        
+        <!-- Welcome Header -->
+        <div class="flex-none mb-8">
+            <h2 class="text-2xl font-bold text-gray-800 dark:text-white">Bonjour, Admin 👋</h2>
+            <p class="text-gray-500 dark:text-gray-400">Voici ce qui se passe aujourd'hui, {{ calendar.today }} {{ calendar.month_name }} {{ calendar.year }}</p>
+        </div>
+
+        <!-- Stats Grid (Fixed) -->
+        <div class="flex-none mb-8">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <!-- Card 1 -->
+                <div class="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl shadow-lg p-5 text-white transform hover:scale-105 transition-transform duration-200">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <p class="text-blue-100 text-sm font-medium">Total Projets</p>
+                            <p class="text-3xl font-bold mt-1">{{ stats.total_projects }}</p>
+                        </div>
+                        <div class="p-2 bg-white/20 rounded-lg">
+                            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
+                        </div>
+                    </div>
+                    <div class="mt-4 flex items-center text-sm text-blue-100">
+                        <span>{{ stats.completed_projects }} terminés</span>
+                    </div>
+                </div>
+
+                <!-- Card 2 -->
+                <div class="bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-xl shadow-lg p-5 text-white transform hover:scale-105 transition-transform duration-200">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <p class="text-emerald-100 text-sm font-medium">Projets Actifs</p>
+                            <p class="text-3xl font-bold mt-1">{{ stats.active_projects }}</p>
+                        </div>
+                        <div class="p-2 bg-white/20 rounded-lg">
+                            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                        </div>
+                    </div>
+                    <div class="mt-4 flex items-center text-sm text-emerald-100">
+                        <span>En cours de développement</span>
+                    </div>
+                </div>
+
+                <!-- Card 3 -->
+                <div class="bg-gradient-to-br from-red-500 to-red-600 rounded-xl shadow-lg p-5 text-white transform hover:scale-105 transition-transform duration-200">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <p class="text-red-100 text-sm font-medium">Retard</p>
+                            <p class="text-3xl font-bold mt-1">{{ stats.overdue_projects }}</p>
+                        </div>
+                        <div class="p-2 bg-white/20 rounded-lg">
+                            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                        </div>
+                    </div>
+                    <div class="mt-4 flex items-center text-sm text-red-100">
+                        <span>Projets en retard</span>
+                    </div>
+                </div>
+
+                <!-- Card 4 -->
+                <div class="bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl shadow-lg p-5 text-white transform hover:scale-105 transition-transform duration-200">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <p class="text-purple-100 text-sm font-medium">Coût Total</p>
+                            <p class="text-3xl font-bold mt-1">{{ "%.0f"|format(stats.total_cost) }} €</p>
+                        </div>
+                        <div class="p-2 bg-white/20 rounded-lg">
+                            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                        </div>
+                    </div>
+                    <div class="mt-4 flex items-center text-sm text-purple-100">
+                        <span>Investissement global</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="flex gap-6 h-full overflow-hidden">
+            <!-- Projects Section -->
+            <div class="flex-1 flex flex-col overflow-hidden">
+                <!-- Projects Header (Fixed) -->
+                <div class="flex-none flex items-center justify-between mb-6">
+                    <h3 class="text-xl font-bold text-gray-800 dark:text-white">Projets Actifs</h3>
+                    <div class="flex space-x-2 bg-gray-200 dark:bg-slate-700 rounded-lg p-1">
+                        <button onclick="toggleView('grid')" id="btn-grid" class="p-2 rounded shadow-sm text-primary bg-white dark:bg-slate-800 transition-all">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path></svg>
+                        </button>
+                        <button onclick="toggleView('list')" id="btn-list" class="p-2 rounded text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-all">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Projects Content (Scrollable) -->
+                <div class="flex-1 overflow-y-auto pr-2 custom-scrollbar">
+                    <!-- Grid View -->
+                    <div id="projects-grid" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-2 gap-6 pb-6">
+                        {% for project in projects %}
+                        <div class="bg-white dark:bg-slate-800 rounded-2xl p-6 shadow-sm hover:shadow-md transition-shadow border border-gray-100 dark:border-slate-700 group">
+                            <div class="flex justify-between items-start mb-4">
+                                <div>
+                                    <span class="inline-block px-3 py-1 rounded-full text-xs font-medium 
+                                        {% if project.status == 'Terminé' %} bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400
+                                        {% elif project.status == 'En cours' %} bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400
+                                        {% elif project.status == 'En attente' %} bg-orange-100 text-orange-600 dark:bg-orange-900/30 dark:text-orange-400
+                                        {% else %} bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400 {% endif %}">
+                                        {{ project.status }}
+                                    </span>
+                                </div>
+                                <button class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"></path></svg>
+                                </button>
+                            </div>
+
+                            <h4 class="text-lg font-bold text-gray-800 dark:text-white mb-1">
+                                <a href="{{ url_for('project_detail', id=project.id) }}" class="hover:text-primary transition-colors">{{ project.name }}</a>
+                            </h4>
+                            <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">{{ project.category }}</p>
+
+                            <div class="mb-4">
+                                <div class="flex justify-between text-xs mb-1">
+                                    <span class="text-gray-500 dark:text-gray-400">Phase actuelle</span>
+                                    <span class="font-medium text-gray-700 dark:text-gray-300">{{ project.current_phase }}</span>
+                                </div>
+                                <div class="w-full bg-gray-100 dark:bg-slate-700 rounded-full h-2">
+                                    <div class="bg-primary h-2 rounded-full transition-all duration-500" style="width: {{ project.progress }}%"></div>
+                                </div>
+                                <div class="flex justify-end mt-1">
+                                    <span class="text-xs font-semibold text-gray-600 dark:text-gray-300">{{ project.progress }}%</span>
+                                </div>
+                            </div>
+
+                            <div class="flex items-center justify-between pt-4 border-t border-gray-100 dark:border-slate-700">
+                                <div class="flex -space-x-2 overflow-hidden">
+                                    {% for member in project.team %}
+                                    <img class="inline-block h-8 w-8 rounded-full ring-2 ring-white dark:ring-slate-800" src="https://ui-avatars.com/api/?name=User+{{ member }}&background=random" alt=""/>
+                                    {% endfor %}
+                                    <button class="inline-flex items-center justify-center h-8 w-8 rounded-full ring-2 ring-white dark:ring-slate-800 bg-gray-100 dark:bg-slate-700 text-xs font-medium text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-slate-600">
+                                        +
+                                    </button>
+                                </div>
+                                <div class="flex items-center text-xs text-gray-500 dark:text-gray-400">
+                                    <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                                    {{ project.deadline_str }}
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+
+                    <!-- List View -->
+                    <div id="projects-list" class="hidden bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-gray-100 dark:border-slate-700 overflow-hidden mb-6">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="bg-gray-50 dark:bg-slate-700/50 border-b border-gray-100 dark:border-slate-700">
+                                    <th class="px-6 py-4 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Projet</th>
+                                    <th class="px-6 py-4 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Équipe</th>
+                                    <th class="px-6 py-4 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Statut</th>
+                                    <th class="px-6 py-4 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Phase</th>
+                                    <th class="px-6 py-4 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Progression</th>
+                                    <th class="px-6 py-4 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Date Limite</th>
+                                    <th class="px-6 py-4 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider"></th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-100 dark:divide-slate-700">
+                                {% for project in projects %}
+                                <tr class="hover:bg-gray-50 dark:hover:bg-slate-700/30 transition-colors">
+                                    <td class="px-6 py-4">
+                                        <div class="flex flex-col">
+                                            <a href="{{ url_for('project_detail', id=project.id) }}" class="font-semibold text-gray-800 dark:text-white hover:text-primary transition-colors">{{ project.name }}</a>
+                                            <span class="text-xs text-gray-500 dark:text-gray-400">{{ project.category }}</span>
+                                        </div>
+                                    </td>
+                                    <td class="px-6 py-4">
+                                        <div class="flex -space-x-2 overflow-hidden">
+                                            {% for member in project.team %}
+                                            <img class="inline-block h-8 w-8 rounded-full ring-2 ring-white dark:ring-slate-800" src="https://ui-avatars.com/api/?name=User+{{ member }}&background=random" alt=""/>
+                                            {% endfor %}
+                                        </div>
+                                    </td>
+                                    <td class="px-6 py-4">
+                                        <span class="inline-block px-2.5 py-0.5 rounded-full text-xs font-medium 
+                                            {% if project.status == 'Terminé' %} bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400
+                                            {% elif project.status == 'En cours' %} bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400
+                                            {% elif project.status == 'En attente' %} bg-orange-100 text-orange-600 dark:bg-orange-900/30 dark:text-orange-400
+                                            {% else %} bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400 {% endif %}">
+                                            {{ project.status }}
+                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4 text-sm text-gray-600 dark:text-gray-300">
+                                        {{ project.current_phase }}
+                                    </td>
+                                    <td class="px-6 py-4 w-48">
+                                        <div class="flex items-center">
+                                            <div class="w-full bg-gray-100 dark:bg-slate-700 rounded-full h-2 mr-3">
+                                                <div class="bg-primary h-2 rounded-full" style="width: {{ project.progress }}%"></div>
+                                            </div>
+                                            <span class="text-xs font-medium text-gray-600 dark:text-gray-300">{{ project.progress }}%</span>
+                                        </div>
+                                    </td>
+                                    <td class="px-6 py-4 text-sm text-gray-500 dark:text-gray-400">
+                                        {{ project.deadline_str }}
+                                    </td>
+                                    <td class="px-6 py-4 text-right">
+                                        <button class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+                                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"></path></svg>
+                                        </button>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Column: Charts, Calendar & Timeline (Fixed) -->
+            <div class="w-80 xl:w-96 flex-none flex flex-col h-full overflow-y-auto hidden lg:block space-y-8 custom-scrollbar pr-2">
+                
+                <!-- Status Chart -->
+                <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm p-6 border border-gray-100 dark:border-slate-700">
+                    <h3 class="text-lg font-bold text-gray-800 dark:text-white mb-4">Répartition des Projets</h3>
+                    <div class="relative h-48">
+                        <canvas id="statusChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Upcoming Deliverables / Timeline -->
+                <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm p-6 border border-gray-100 dark:border-slate-700">
+                    <div class="flex items-center justify-between mb-6">
+                        <h3 class="text-lg font-bold text-gray-800 dark:text-white">Prochaines Livraisons</h3>
+                        <a href="{{ url_for('projects_list') }}" class="text-sm text-primary hover:underline">Voir tout</a>
+                    </div>
+
+                    <div class="space-y-4 relative before:absolute before:inset-0 before:ml-5 before:-translate-x-px before:h-full before:w-0.5 before:bg-gradient-to-b before:from-transparent before:via-slate-300 before:to-transparent">
+                        {% for project in upcoming_deliverables %}
+                        <div class="relative flex items-center justify-between group is-active">
+                            <!-- Icon -->
+                            <div class="flex items-center justify-center w-8 h-8 rounded-full border border-white bg-slate-300 group-[.is-active]:bg-emerald-500 text-slate-500 group-[.is-active]:text-emerald-50 shadow shrink-0 z-10 ml-1">
+                                <svg class="fill-current w-3 h-3" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 12 10">
+                                    <path fill-rule="nonzero" d="M10.422 1.257 4.655 7.025 2.553 4.923A.916.916 0 0 0 1.257 6.22l2.75 2.75a.916.916 0 0 0 1.296 0l6.415-6.416a.916.916 0 0 0-1.296-1.296Z" />
+                                </svg>
+                            </div>
+                            <!-- Card -->
+                            <div class="w-[calc(100%-3.5rem)] ml-4 bg-white dark:bg-slate-900 p-3 rounded border border-slate-200 dark:border-slate-700 shadow-sm hover:shadow-md transition-shadow">
+                                <div class="flex items-center justify-between mb-1">
+                                    <div class="font-bold text-sm text-slate-900 dark:text-slate-100 truncate pr-2">{{ project.name }}</div>
+                                    <time class="text-xs font-medium text-indigo-500 whitespace-nowrap">{{ project.deadline_str }}</time>
+                                </div>
+                                <div class="text-slate-500 dark:text-slate-400 text-xs truncate">{{ project.current_phase }}</div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function toggleView(view) {
+        const grid = document.getElementById('projects-grid');
+        const list = document.getElementById('projects-list');
+        const btnGrid = document.getElementById('btn-grid');
+        const btnList = document.getElementById('btn-list');
+        
+        if (view === 'grid') {
+            grid.classList.remove('hidden');
+            list.classList.add('hidden');
+            
+            // Update buttons
+            btnGrid.classList.add('bg-white', 'dark:bg-slate-800', 'shadow-sm', 'text-primary');
+            btnGrid.classList.remove('text-gray-500', 'dark:text-gray-400');
+            
+            btnList.classList.remove('bg-white', 'dark:bg-slate-800', 'shadow-sm', 'text-primary');
+            btnList.classList.add('text-gray-500', 'dark:text-gray-400');
+        } else {
+            grid.classList.add('hidden');
+            list.classList.remove('hidden');
+            
+            // Update buttons
+            btnList.classList.add('bg-white', 'dark:bg-slate-800', 'shadow-sm', 'text-primary');
+            btnList.classList.remove('text-gray-500', 'dark:text-gray-400');
+            
+            btnGrid.classList.remove('bg-white', 'dark:bg-slate-800', 'shadow-sm', 'text-primary');
+            btnGrid.classList.add('text-gray-500', 'dark:text-gray-400');
+        }
+    }
+
+    // Chart.js Initialization
+    document.addEventListener('DOMContentLoaded', function() {
+        const ctx = document.getElementById('statusChart').getContext('2d');
+        
+        // Colors matching Tailwind classes
+        const colors = {
+            'En cours': '#3b82f6', // blue-500
+            'Terminé': '#10b981', // emerald-500
+            'En attente': '#f59e0b', // amber-500
+            'Autre': '#6b7280' // gray-500
+        };
+
+        const data = {
+            labels: ['En cours', 'Terminé', 'En attente', 'Autre'],
+            datasets: [{
+                data: [
+                    {{ status_counts['En cours'] }},
+                    {{ status_counts['Terminé'] }},
+                    {{ status_counts['En attente'] }},
+                    {{ status_counts['Autre'] }}
+                ],
+                backgroundColor: [
+                    colors['En cours'],
+                    colors['Terminé'],
+                    colors['En attente'],
+                    colors['Autre']
+                ],
+                borderWidth: 0,
+                hoverOffset: 4
+            }]
+        };
+
+        new Chart(ctx, {
+            type: 'doughnut',
+            data: data,
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'right',
+                        labels: {
+                            usePointStyle: true,
+                            boxWidth: 8,
+                            font: {
+                                size: 11
+                            }
+                        }
+                    }
+                },
+                cutout: '70%'
+            }
+        });
+    });
+</script>
+{% endblock %}

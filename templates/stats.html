@@ -1,0 +1,189 @@
+{% extends "base.html" %}
+
+{% block header_title %}Statistiques{% endblock %}
+
+{% block main_content %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<div class="p-6 space-y-6">
+    
+    <!-- KPI Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <!-- Total Projects -->
+        <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-6 border border-gray-100 dark:border-slate-700 flex items-center">
+            <div class="p-3 rounded-full bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400 mr-4">
+                <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
+            </div>
+            <div>
+                <p class="text-sm text-gray-500 dark:text-gray-400 font-medium">Total Projets</p>
+                <p class="text-2xl font-bold text-gray-800 dark:text-white">{{ total_projects }}</p>
+            </div>
+        </div>
+
+        <!-- Active Projects -->
+        <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-6 border border-gray-100 dark:border-slate-700 flex items-center">
+            <div class="p-3 rounded-full bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400 mr-4">
+                <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+            </div>
+            <div>
+                <p class="text-sm text-gray-500 dark:text-gray-400 font-medium">Projets Actifs</p>
+                <p class="text-2xl font-bold text-gray-800 dark:text-white">{{ active_count }}</p>
+            </div>
+        </div>
+
+        <!-- Total Cost -->
+        <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-6 border border-gray-100 dark:border-slate-700 flex items-center">
+            <div class="p-3 rounded-full bg-purple-100 text-purple-600 dark:bg-purple-900/30 dark:text-purple-400 mr-4">
+                <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+            </div>
+            <div>
+                <p class="text-sm text-gray-500 dark:text-gray-400 font-medium">Coût Global</p>
+                <p class="text-2xl font-bold text-gray-800 dark:text-white">{{ "%.0f"|format(total_cost) }} €</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts Row 1 -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <!-- Projects by Category -->
+        <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-6 border border-gray-100 dark:border-slate-700">
+            <h3 class="text-lg font-bold text-gray-800 dark:text-white mb-4">Projets par Catégorie</h3>
+            <div class="relative h-64">
+                <canvas id="categoryChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Projects by Status -->
+        <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-6 border border-gray-100 dark:border-slate-700">
+            <h3 class="text-lg font-bold text-gray-800 dark:text-white mb-4">État des Projets</h3>
+            <div class="relative h-64">
+                <canvas id="statusChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts Row 2 -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <!-- Cost by Category -->
+        <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-6 border border-gray-100 dark:border-slate-700">
+            <h3 class="text-lg font-bold text-gray-800 dark:text-white mb-4">Coût par Catégorie</h3>
+            <div class="relative h-64">
+                <canvas id="costChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Progress Distribution -->
+        <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-6 border border-gray-100 dark:border-slate-700">
+            <h3 class="text-lg font-bold text-gray-800 dark:text-white mb-4">Distribution de l'Avancement</h3>
+            <div class="relative h-64">
+                <canvas id="progressChart"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Common Chart Options
+    const commonOptions = {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                position: 'bottom',
+                labels: {
+                    usePointStyle: true,
+                    padding: 20,
+                    color: document.documentElement.classList.contains('dark') ? '#94a3b8' : '#64748b'
+                }
+            }
+        },
+        scales: {
+            y: {
+                beginAtZero: true,
+                grid: {
+                    color: document.documentElement.classList.contains('dark') ? '#334155' : '#e2e8f0'
+                },
+                ticks: {
+                    color: document.documentElement.classList.contains('dark') ? '#94a3b8' : '#64748b'
+                }
+            },
+            x: {
+                grid: {
+                    display: false
+                },
+                ticks: {
+                    color: document.documentElement.classList.contains('dark') ? '#94a3b8' : '#64748b'
+                }
+            }
+        }
+    };
+
+    const doughnutOptions = {
+        ...commonOptions,
+        scales: { display: false },
+        cutout: '60%'
+    };
+
+    // Category Chart
+    new Chart(document.getElementById('categoryChart'), {
+        type: 'bar',
+        data: {
+            labels: {{ by_category.keys()|list|tojson }},
+            datasets: [{
+                label: 'Nombre de projets',
+                data: {{ by_category.values()|list|tojson }},
+                backgroundColor: '#3b82f6',
+                borderRadius: 6
+            }]
+        },
+        options: commonOptions
+    });
+
+    // Status Chart
+    new Chart(document.getElementById('statusChart'), {
+        type: 'doughnut',
+        data: {
+            labels: {{ by_status.keys()|list|tojson }},
+            datasets: [{
+                data: {{ by_status.values()|list|tojson }},
+                backgroundColor: [
+                    '#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6', '#64748b'
+                ],
+                borderWidth: 0
+            }]
+        },
+        options: doughnutOptions
+    });
+
+    // Cost Chart
+    new Chart(document.getElementById('costChart'), {
+        type: 'pie',
+        data: {
+            labels: {{ cost_by_category.keys()|list|tojson }},
+            datasets: [{
+                data: {{ cost_by_category.values()|list|tojson }},
+                backgroundColor: [
+                    '#8b5cf6', '#ec4899', '#f43f5e', '#06b6d4', '#14b8a6'
+                ],
+                borderWidth: 0
+            }]
+        },
+        options: doughnutOptions
+    });
+
+    // Progress Chart
+    new Chart(document.getElementById('progressChart'), {
+        type: 'bar',
+        data: {
+            labels: {{ progress_distribution.keys()|list|tojson }},
+            datasets: [{
+                label: 'Projets',
+                data: {{ progress_distribution.values()|list|tojson }},
+                backgroundColor: '#f59e0b',
+                borderRadius: 6
+            }]
+        },
+        options: commonOptions
+    });
+</script>
+{% endblock %}

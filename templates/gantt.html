@@ -1,0 +1,115 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <div class="flex justify-between items-center mb-6">
+        <h2 class="text-2xl font-bold text-gray-800 dark:text-white">Calendrier Gantt</h2>
+        <div class="flex space-x-2">
+            <button onclick="changeView('Day')" class="px-3 py-1 bg-white dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded-md text-sm hover:bg-gray-50 dark:hover:bg-slate-600 transition-colors">Jour</button>
+            <button onclick="changeView('Week')" class="px-3 py-1 bg-white dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded-md text-sm hover:bg-gray-50 dark:hover:bg-slate-600 transition-colors">Semaine</button>
+            <button onclick="changeView('Month')" class="px-3 py-1 bg-primary text-white rounded-md text-sm hover:bg-blue-600 transition-colors">Mois</button>
+        </div>
+    </div>
+
+    <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-6 overflow-hidden">
+        <div id="gantt-chart" class="w-full overflow-x-auto custom-scrollbar"></div>
+    </div>
+</div>
+
+<!-- Frappe Gantt CSS & JS -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/frappe-gantt@0.6.1/dist/frappe-gantt.css">
+<script src="https://cdn.jsdelivr.net/npm/frappe-gantt@0.6.1/dist/frappe-gantt.min.js"></script>
+
+<script>
+    // Data passed from Flask
+    const tasks = {{ tasks | tojson }};
+
+    // Initialize Gantt
+    let gantt = new Gantt("#gantt-chart", tasks, {
+        header_height: 50,
+        column_width: 30,
+        step: 24,
+        view_modes: ['Quarter Day', 'Half Day', 'Day', 'Week', 'Month'],
+        bar_height: 20,
+        bar_corner_radius: 3,
+        arrow_curve: 5,
+        padding: 18,
+        view_mode: 'Month',
+        date_format: 'YYYY-MM-DD',
+        language: 'fr', // Optional: if supported or custom
+        custom_popup_html: function(task) {
+            return `
+                <div class="p-2 text-sm w-64">
+                    <div class="font-bold mb-1">${task.name}</div>
+                    <div class="text-xs text-gray-500 mb-1">${task.start} - ${task.end}</div>
+                    <div class="text-xs">Progression: ${task.progress}%</div>
+                </div>
+            `;
+        }
+    });
+
+    function changeView(mode) {
+        gantt.change_view_mode(mode);
+        
+        // Update active button style
+        document.querySelectorAll('button').forEach(btn => {
+            if(btn.textContent === mode || (mode === 'Month' && btn.textContent === 'Mois') || (mode === 'Week' && btn.textContent === 'Semaine') || (mode === 'Day' && btn.textContent === 'Jour')) {
+                btn.classList.add('bg-primary', 'text-white');
+                btn.classList.remove('bg-white', 'dark:bg-slate-700', 'text-gray-800', 'dark:text-white');
+            } else {
+                btn.classList.remove('bg-primary', 'text-white');
+                btn.classList.add('bg-white', 'dark:bg-slate-700');
+            }
+        });
+    }
+    
+    // Dark mode support for Gantt
+    // Frappe Gantt doesn't have native dark mode, so we might need some custom CSS overrides if needed
+    // But for now, let's keep it simple.
+</script>
+
+<style>
+    /* Custom overrides for Dark Mode if needed */
+    .dark .gantt .grid-header {
+        fill: #1e293b;
+        stroke: #334155;
+    }
+    .dark .gantt .grid-row {
+        fill: #1e293b;
+    }
+    .dark .gantt .grid-row:nth-child(even) {
+        fill: #0f172a;
+    }
+    .dark .gantt .tick text {
+        fill: #cbd5e1;
+    }
+    .dark .gantt .upper-text {
+        fill: #cbd5e1;
+    }
+    .dark .gantt .lower-text {
+        fill: #94a3b8;
+    }
+
+    /* Custom Bar Colors */
+    .gantt .bar-todo .bar {
+        fill: #94a3b8; /* gray-400 */
+    }
+    .gantt .bar-progress .bar {
+        fill: #3b82f6; /* blue-500 (primary) */
+    }
+    .gantt .bar-review .bar {
+        fill: #f59e0b; /* amber-500 */
+    }
+    .gantt .bar-done .bar {
+        fill: #10b981; /* emerald-500 */
+    }
+    .gantt .bar-overdue .bar {
+        fill: #ef4444; /* red-500 */
+    }
+    
+    /* Progress bar color */
+    .gantt .bar-progress {
+        fill: rgba(255, 255, 255, 0.3);
+    }
+</style>
+{% endblock %}
