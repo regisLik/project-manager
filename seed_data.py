@@ -1,81 +1,156 @@
-from app import app, db, Project, ProjectVersion
-from datetime import datetime, timedelta
-import random
+from app import app, db, Project, ProjectVersion, ContextRequest
+from datetime import datetime, timedelta, date
 
-def seed_projects():
-    with app.app_context():
-        print("Seeding database with 10 virtual projects...")
-        
-        # Clear existing data (optional, comment out if you want to append)
-        # db.drop_all()
-        # db.create_all()
-        
-        categories = ['Web', 'Mobile', 'Data Science', 'Infrastructure', 'Security', 'Backend', 'Frontend', 'DevOps']
-        phases = ['Intake', 'Planning', 'Development', 'Testing', 'Review', 'Deployment', 'Done']
-        statuses = ['Not started', 'In progress', 'En cours', 'Review', 'Done', 'Stopped', 'Gel']
-        
-        projects_list = [
-            ("E-commerce Platform Revamp", "Web", "Refonte complète de la plateforme e-commerce."),
-            ("Customer Loyalty App", "Mobile", "Application mobile pour la fidélisation client."),
-            ("AI Recommendation Engine", "Data Science", "Moteur de recommandation produit basé sur l'IA."),
-            ("Cloud Migration Phase 2", "Infrastructure", "Migration des bases de données vers le cloud."),
-            ("Security Audit 2025", "Security", "Audit complet et mise en conformité."),
-            ("Internal HR Portal", "Web", "Portail RH pour la gestion des congés et notes de frais."),
-            ("API Gateway Implementation", "Backend", "Mise en place d'une API Gateway centralisée."),
-            ("Design System V2", "Frontend", "Mise à jour du Design System pour uniformiser les UI."),
-            ("CI/CD Pipeline Optimization", "DevOps", "Optimisation des pipelines de déploiement."),
-            ("Legacy System Decommissioning", "Infrastructure", "Arrêt et archivage des anciens systèmes.")
-        ]
-
-        for i, (name, category, desc) in enumerate(projects_list):
-            # Create Project
-            project = Project(name=name, category=category)
-            db.session.add(project)
-            db.session.commit()
-            
-            # Randomize status and progress
-            status = random.choice(statuses)
-            phase = random.choice(phases)
-            progress = random.randint(0, 100)
-            
-            if status == 'Done':
-                progress = 100
-                phase = 'Done'
-            elif status == 'Not started':
-                progress = 0
-                phase = 'Intake'
-            
-            # Calculate dates
-            now = datetime.now().date()
-            start_offset = random.randint(-100, -10)
-            duration = random.randint(30, 180)
-            
-            start_date = now + timedelta(days=start_offset)
-            deadline = start_date + timedelta(days=duration)
-            
-            # Create Version
-            version = ProjectVersion(
-                project_id=project.id,
-                version_number=f"V{random.randint(0,2)}.{random.randint(0,9)}.{random.randint(0,9)}",
-                phase=phase,
-                status=status,
-                app_status="Working",
-                integration_level="Dev",
-                hosting="Cloud",
-                accessibility="Online",
-                description=desc,
-                progress=progress,
-                deadline=deadline,
-                start_date=start_date,
-                duration_days=duration,
-                cost=random.randint(5000, 50000),
-                cost_type="One-time",
-                team_members="Alice, Bob, Charlie, David"
-            )
-            db.session.add(version)
-        
-        db.session.commit()
-        print("Successfully added 10 virtual projects.")
-
-if __name__ == "__main__":
-    seed_projects()
+with app.app_context():
+    print("Creating seed data...")
+    
+    # Projet 1 avec plusieurs versions
+    project1 = Project(name="Application E-Commerce", category="Web")
+    db.session.add(project1)
+    db.session.flush()
+    
+    # Version 1.0.0
+    v1 = ProjectVersion(
+        project_id=project1.id,
+        version_number="1.0.0",
+        created_at=datetime.now() - timedelta(days=150),
+        phase="Production",
+        status="Done",
+        description="Version initiale avec catalogue produits et authentification",
+        start_date=date.today() - timedelta(days=180),
+        duration_days=30,
+        progress=100
+    )
+    db.session.add(v1)
+    db.session.flush()
+    
+    # Version 1.1.0
+    v2 = ProjectVersion(
+        project_id=project1.id,
+        version_number="1.1.0",
+        parent_id=v1.id,
+        created_at=datetime.now() - timedelta(days=120),
+        phase="Production",
+        status="Done",
+        description="Ajout du panier et système de paiement Stripe",
+        start_date=date.today() - timedelta(days=150),
+        duration_days=25,
+        progress=100
+    )
+    db.session.add(v2)
+    db.session.flush()
+    
+    # Version 1.2.0
+    v3 = ProjectVersion(
+        project_id=project1.id,
+        version_number="1.2.0",
+        parent_id=v2.id,
+        created_at=datetime.now() - timedelta(days=80),
+        phase="Production",
+        status="Done",
+        description="Gestion des stocks en temps réel avec alertes",
+        start_date=date.today() - timedelta(days=120),
+        duration_days=20,
+        progress=100
+    )
+    db.session.add(v3)
+    db.session.flush()
+    
+    # Version 2.0.0 - version actuelle en développement
+    v4 = ProjectVersion(
+        project_id=project1.id,
+        version_number="2.0.0",
+        parent_id=v3.id,
+        created_at=datetime.now() - timedelta(days=30),
+        phase="Development",
+        status="In Progress",
+        description="Refonte UI/UX avec système de recommandations et programme fidélité",
+        start_date=date.today() - timedelta(days=60),
+        duration_days=90,
+        progress=50,
+        deadline=date.today() + timedelta(days=30)
+    )
+    db.session.add(v4)
+    db.session.flush()
+    
+    # Ajouter des context requests pour tester le tableau
+    cr1 = ContextRequest(
+        version_id=v4.id,
+        requester="Marie Dubois",
+        requester_role="Client",
+        description="Les clients veulent une wishlist pour sauvegarder leurs produits favoris",
+        user_request_type="Ajout",
+        tech_request_type="",
+        planned_improvement="Yes",
+        improvement_type="Minor",
+        difficulty_level="Easy",
+        priority_level="Medium"
+    )
+    db.session.add(cr1)
+    
+    cr2 = ContextRequest(
+        version_id=v4.id,
+        requester="Jean Martin",
+        requester_role="Manager",
+        description="Optimisation des performances de la page d'accueil (temps de chargement > 3s)",
+        user_request_type="",
+        tech_request_type="Optimization,Refactorisation",
+        planned_improvement="Yes",
+        improvement_type="Patch",
+        difficulty_level="Medium",
+        priority_level="High"
+    )
+    db.session.add(cr2)
+    
+    cr3 = ContextRequest(
+        version_id=v4.id,
+        requester="Sophie Lambert",
+        requester_role="Product Owner",
+        description="Intégration d'un chat en temps réel pour le support client",
+        user_request_type="Ajout",
+        tech_request_type="Migration",
+        planned_improvement="Not decided",
+        improvement_type="Minor",
+        difficulty_level="Hard",
+        priority_level="Low"
+    )
+    db.session.add(cr3)
+    
+    cr4 = ContextRequest(
+        version_id=v4.id,
+        requester="Pierre Rousseau",
+        requester_role="Developer",
+        description="Migration de jQuery vers React pour améliorer la maintenabilité",
+        user_request_type="",
+        tech_request_type="Migration,Refactorisation",
+        planned_improvement="Yes",
+        improvement_type="Major",
+        difficulty_level="Hard",
+        priority_level="Medium"
+    )
+    db.session.add(cr4)
+    
+    # Projet 2
+    project2 = Project(name="App Mobile Fitness", category="Mobile")
+    db.session.add(project2)
+    db.session.flush()
+    
+    v5 = ProjectVersion(
+        project_id=project2.id,
+        version_number="0.1.0",
+        created_at=datetime.now() - timedelta(days=60),
+        phase="Planning",
+        status="In Progress",
+        description="Prototype initial avec tracking d'activités sportives",
+        start_date=date.today() - timedelta(days=90),
+        duration_days=60,
+        progress=30
+    )
+    db.session.add(v5)
+    
+    db.session.commit()
+    
+    print(f"\n✅ Seed data created!")
+    print(f"   - {project1.name}: 4 versions (1.0.0 → 2.0.0)")
+    print(f"   - Version 2.0.0 has 4 context requests for testing")
+    print(f"   - {project2.name}: 1 version (0.1.0)")

@@ -1,84 +1,146 @@
-# Project Manager
+# ProjTrack - Project Management System
 
-Application de gestion de projets avec tableau de bord, statistiques et diagramme de Gantt.
+Application de gestion de projets avec système de versioning et gestion des demandes de modification.
 
-## Fonctionnalités
+## 🚀 Démarrage Rapide
 
-*   **Dashboard** : Vue d'ensemble des projets, KPIs, et prochaines livraisons.
-*   **Projets** : Gestion complète des projets (création, édition, versioning).
-*   **Statistiques** : Analyse visuelle des données (budget, statuts, types de projets).
-*   **Gantt** : Visualisation temporelle des projets.
+### Installation
 
-## Installation
+1. **Cloner le repository**
+```bash
+git clone <repository-url>
+cd project-manager
+```
 
-1.  Cloner le dépôt :
-    ```bash
-    git clone <votre-repo-url>
-    cd project-manager
-    ```
+2. **Créer et activer l'environnement virtuel**
+```bash
+python -m venv venv
+.\venv\Scripts\activate  # Windows
+source venv/bin/activate  # Linux/Mac
+```
 
-2.  Créer un environnement virtuel (recommandé) :
-    ```bash
-    python -m venv venv
-    # Windows
-    venv\Scripts\activate
-    # Mac/Linux
-    source venv/bin/activate
-    ```
+3. **Installer les dépendances**
+```bash
+pip install -r requirements.txt
+```
 
-3.  Installer les dépendances :
-    ```bash
-    pip install -r requirements.txt
-    ```
+4. **Générer des données de test (optionnel mais recommandé)**
+```bash
+python generate_sample_data.py
+```
+Ce script génère automatiquement des projets, versions et demandes pour tester l'application.
 
-4.  Initialiser la base de données et ajouter des données de test :
-    ```bash
-    python seed_data.py
-    ```
+5. **Lancer l'application**
+```bash
+python app.py
+```
 
-5.  Lancer l'application :
-    ```bash
-    python app.py
-    ```
+6. **Ouvrir dans le navigateur**
+```
+http://localhost:5000
+```
 
-6.  Accéder à l'application sur `http://127.0.0.1:5000`.
+## 📊 Fonctionnalités
 
-## Déploiement sur GitHub
+### Gestion de Projets
+- Création et gestion de projets multi-catégories (Web, Mobile, Desktop, API, Data)
+- Système de versioning avec héritage parent-enfant
+- Suivi de progression et deadlines
+- Gestion d'équipes et budgets
 
-Pour mettre ce projet sur GitHub, suivez ces étapes :
+### Gestion des Demandes
+- Page dédiée pour visualiser toutes les requêtes
+- Filtrage par projet
+- Statistiques en temps réel (priorité, difficulté, approbation)
+- Édition via panneau latéral
+- Création de nouvelles demandes
 
-1.  Initialiser Git :
-    ```bash
-    git init
-    ```
+### Future Upgrade Section
+- Statistiques visuelles des demandes par projet
+- Cartes interactives avec métriques clés
+- Lien direct vers la vue globale des requêtes
 
-2.  Ajouter les fichiers :
-    ```bash
-    git add .
-    ```
+### Interface
+- Navigation collapsible avec sous-menus
+- Mode sombre/clair
+- Design moderne avec Tailwind CSS
+- Interactions fluides avec Alpine.js
 
-3.  Faire le premier commit :
-    ```bash
-    git commit -m "Initial commit: Project Manager App"
-    ```
+## 🗂️ Structure du Projet
 
-4.  Créer un nouveau repository sur GitHub (sans README/gitignore par défaut).
+```
+project-manager/
+├── app.py                      # Application Flask principale
+├── generate_sample_data.py     # Générateur de données synthétiques
+├── seed_data.py               # Script de seed basique
+├── projects.db                # Base de données SQLite
+├── templates/
+│   ├── base.html              # Template de base
+│   ├── dashboard.html         # Page d'accueil
+│   ├── projects.html          # Liste des projets
+│   ├── project_detail.html    # Détails d'un projet
+│   ├── requests.html          # Gestion globale des requêtes
+│   └── ...
+├── static/
+│   └── ...
+└── uploads/                   # Documents téléchargés
+```
 
-5.  Lier le dépôt local au dépôt distant (remplacez l'URL) :
-    ```bash
-    git remote add origin https://github.com/votre-username/project-manager.git
-    ```
+## 🛠️ Technologies Utilisées
 
-6.  Pousser le code :
-    ```bash
-    git branch -M main
-    git push -u origin main
-    ```
+- **Backend**: Flask, SQLAlchemy
+- **Frontend**: Tailwind CSS, Alpine.js
+- **Base de données**: SQLite
+- **Génération de données**: Faker
 
-## Structure du Projet
+## 📝 Modèles de Données
 
-*   `app.py` : Application Flask principale.
-*   `templates/` : Fichiers HTML (Jinja2).
-*   `static/` : Fichiers statiques (CSS, JS, Images).
-*   `seed_data.py` : Script pour peupler la base de données.
-*   `requirements.txt` : Liste des dépendances Python.
+### Project
+- Nom, catégorie
+- Relation avec versions
+
+### ProjectVersion
+- Numéro de version, phase, statut
+- Dates, budget, équipe
+- Objectifs, fonctionnalités
+- Relation parent-enfant pour versioning
+
+### ContextRequest
+- Demandeur, rôle, description
+- Types de demande (user/tech)
+- Niveau de priorité, difficulté
+- Amélioration prévue
+
+## 🔄 Workflow de Développement
+
+1. **Cloner le projet**
+2. **Générer des données de test** avec `generate_sample_data.py`
+3. **Développer vos fonctionnalités**
+4. **Tester avec les données synthétiques**
+5. **Commit et push**
+
+## 📦 Requirements
+
+Voir `requirements.txt` pour la liste complète des dépendances.
+
+Principales dépendances:
+- Flask
+- Flask-SQLAlchemy
+- Faker (pour génération de données)
+
+## 🎨 Personnalisation
+
+### Générer plus de données
+Modifier les constantes dans `generate_sample_data.py`:
+```python
+NUM_PROJECTS = 8              # Nombre de projets
+MAX_VERSIONS_PER_PROJECT = 5  # Versions max par projet
+MAX_REQUESTS_PER_VERSION = 6  # Requêtes max par version
+```
+
+### Thème
+L'application supporte le mode sombre automatiquement via Tailwind CSS.
+
+## 📄 License
+
+Ce projet est sous license MIT.

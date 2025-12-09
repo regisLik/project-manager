@@ -54,13 +54,29 @@
 </div>
 {% endmacro %}
 
-<div class="flex flex-col h-[calc(100vh-8rem)]">
+<div class="flex flex-col h-[calc(100vh-8rem)]" x-data="{ view: 'status' }">
     <!-- Toolbar -->
     <div class="mb-6 flex justify-between items-center bg-white dark:bg-slate-800 p-4 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700">
-        <div class="relative max-w-md w-full">
-            <input type="text" id="search-input" placeholder="Rechercher un projet..." class="w-full pl-10 pr-4 py-2 rounded-lg border border-gray-300 dark:border-slate-600 bg-gray-50 dark:bg-slate-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-transparent transition-shadow">
-            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+        <div class="flex items-center space-x-4 flex-1">
+            <!-- View Toggle -->
+            <div class="flex bg-gray-100 dark:bg-slate-700 rounded-lg p-1">
+                <button @click="view = 'status'" 
+                    :class="view === 'status' ? 'bg-white dark:bg-slate-600 shadow-sm text-gray-900 dark:text-white' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700'"
+                    class="px-3 py-1.5 text-sm font-medium rounded-md transition-all">
+                    Status
+                </button>
+                <button @click="view = 'phase'" 
+                    :class="view === 'phase' ? 'bg-white dark:bg-slate-600 shadow-sm text-gray-900 dark:text-white' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700'"
+                    class="px-3 py-1.5 text-sm font-medium rounded-md transition-all">
+                    Phase
+                </button>
+            </div>
+
+            <div class="relative max-w-md w-full">
+                <input type="text" id="search-input" placeholder="Rechercher un projet..." class="w-full pl-10 pr-4 py-2 rounded-lg border border-gray-300 dark:border-slate-600 bg-gray-50 dark:bg-slate-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-transparent transition-shadow">
+                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                </div>
             </div>
         </div>
         <a href="{{ url_for('new_project') }}" class="ml-4 bg-primary hover:bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center transition-colors shadow-sm font-medium">
@@ -69,8 +85,8 @@
         </a>
     </div>
 
-    <!-- Kanban Board -->
-    <div class="flex-1 overflow-x-auto overflow-y-hidden">
+    <!-- Kanban Board - Status View -->
+    <div x-show="view === 'status'" class="flex-1 overflow-x-auto overflow-y-hidden">
         <div class="flex h-full space-x-6 pb-4 min-w-max">
             
             <!-- Column: Not started -->
@@ -82,7 +98,7 @@
                     </div>
                     <span class="bg-gray-200 dark:bg-slate-700 text-gray-600 dark:text-gray-300 text-xs font-medium px-2.5 py-0.5 rounded-full count-badge" data-status="Not started">0</span>
                 </div>
-                <div class="flex-1 p-3 overflow-y-auto custom-scrollbar space-y-3 kanban-column" data-status="Not started" ondrop="drop(event)" ondragover="allowDrop(event)">
+                <div class="flex-1 p-3 overflow-y-auto custom-scrollbar space-y-3 kanban-column" data-status="Not started" ondrop="drop(event, 'status')" ondragover="allowDrop(event)">
                     {% for project in projects if project.status == 'Not started' %}
                         {{ project_card(project) }}
                     {% endfor %}
@@ -98,7 +114,7 @@
                     </div>
                     <span class="bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 text-xs font-medium px-2.5 py-0.5 rounded-full count-badge" data-status="In progress">0</span>
                 </div>
-                <div class="flex-1 p-3 overflow-y-auto custom-scrollbar space-y-3 kanban-column" data-status="In progress" ondrop="drop(event)" ondragover="allowDrop(event)">
+                <div class="flex-1 p-3 overflow-y-auto custom-scrollbar space-y-3 kanban-column" data-status="In progress" ondrop="drop(event, 'status')" ondragover="allowDrop(event)">
                     {% for project in projects if project.status == 'In progress' %}
                         {{ project_card(project) }}
                     {% endfor %}
@@ -114,7 +130,7 @@
                     </div>
                     <span class="bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 text-xs font-medium px-2.5 py-0.5 rounded-full count-badge" data-status="Review">0</span>
                 </div>
-                <div class="flex-1 p-3 overflow-y-auto custom-scrollbar space-y-3 kanban-column" data-status="Review" ondrop="drop(event)" ondragover="allowDrop(event)">
+                <div class="flex-1 p-3 overflow-y-auto custom-scrollbar space-y-3 kanban-column" data-status="Review" ondrop="drop(event, 'status')" ondragover="allowDrop(event)">
                     {% for project in projects if project.status == 'Review' %}
                         {{ project_card(project) }}
                     {% endfor %}
@@ -130,7 +146,7 @@
                     </div>
                     <span class="bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 text-xs font-medium px-2.5 py-0.5 rounded-full count-badge" data-status="Done">0</span>
                 </div>
-                <div class="flex-1 p-3 overflow-y-auto custom-scrollbar space-y-3 kanban-column" data-status="Done" ondrop="drop(event)" ondragover="allowDrop(event)">
+                <div class="flex-1 p-3 overflow-y-auto custom-scrollbar space-y-3 kanban-column" data-status="Done" ondrop="drop(event, 'status')" ondragover="allowDrop(event)">
                     {% for project in projects if project.status == 'Done' %}
                         {{ project_card(project) }}
                     {% endfor %}
@@ -146,7 +162,7 @@
                     </div>
                     <span class="bg-cyan-100 dark:bg-cyan-900/30 text-cyan-600 dark:text-cyan-400 text-xs font-medium px-2.5 py-0.5 rounded-full count-badge" data-status="Gel">0</span>
                 </div>
-                <div class="flex-1 p-3 overflow-y-auto custom-scrollbar space-y-3 kanban-column" data-status="Gel" ondrop="drop(event)" ondragover="allowDrop(event)">
+                <div class="flex-1 p-3 overflow-y-auto custom-scrollbar space-y-3 kanban-column" data-status="Gel" ondrop="drop(event, 'status')" ondragover="allowDrop(event)">
                     {% for project in projects if project.status == 'Gel' %}
                         {{ project_card(project) }}
                     {% endfor %}
@@ -162,13 +178,35 @@
                     </div>
                     <span class="bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 text-xs font-medium px-2.5 py-0.5 rounded-full count-badge" data-status="Stopped">0</span>
                 </div>
-                <div class="flex-1 p-3 overflow-y-auto custom-scrollbar space-y-3 kanban-column" data-status="Stopped" ondrop="drop(event)" ondragover="allowDrop(event)">
+                <div class="flex-1 p-3 overflow-y-auto custom-scrollbar space-y-3 kanban-column" data-status="Stopped" ondrop="drop(event, 'status')" ondragover="allowDrop(event)">
                     {% for project in projects if project.status == 'Stopped' %}
                         {{ project_card(project) }}
                     {% endfor %}
                 </div>
             </div>
 
+        </div>
+    </div>
+
+    <!-- Kanban Board - Phase View -->
+    <div x-show="view === 'phase'" class="flex-1 overflow-x-auto overflow-y-hidden" style="display: none;">
+        <div class="flex h-full space-x-6 pb-4 min-w-max">
+            {% set phases = ['Intake', 'Qualification', 'Scoping', 'Planning', 'Build', 'Test & QA', 'Staging', 'Release', 'Operate', 'Retro', 'Closed'] %}
+            {% for phase in phases %}
+            <div class="flex flex-col w-80 bg-gray-50 dark:bg-slate-800/50 rounded-xl border border-gray-200 dark:border-slate-700 h-full">
+                <div class="p-4 flex items-center justify-between border-b border-gray-200 dark:border-slate-700 bg-gray-50/50 dark:bg-slate-800 rounded-t-xl">
+                    <div class="flex items-center">
+                        <h3 class="font-semibold text-gray-700 dark:text-gray-200">{{ phase }}</h3>
+                    </div>
+                    <span class="bg-gray-200 dark:bg-slate-700 text-gray-600 dark:text-gray-300 text-xs font-medium px-2.5 py-0.5 rounded-full count-badge" data-phase="{{ phase }}">0</span>
+                </div>
+                <div class="flex-1 p-3 overflow-y-auto custom-scrollbar space-y-3 kanban-column" data-phase="{{ phase }}" ondrop="drop(event, 'phase')" ondragover="allowDrop(event)">
+                    {% for project in projects if project.latest_version and project.latest_version.phase == phase %}
+                        {{ project_card(project) }}
+                    {% endfor %}
+                </div>
+            </div>
+            {% endfor %}
         </div>
     </div>
 </div>
@@ -209,7 +247,7 @@
         });
     });
 
-    function drop(ev) {
+    function drop(ev, type) {
         ev.preventDefault();
         const column = ev.currentTarget;
         column.classList.remove('bg-gray-200', 'dark:bg-slate-700');
@@ -217,15 +255,20 @@
         const data = ev.dataTransfer.getData("text");
         const card = document.getElementById(data);
         
-        // Only append if dropped in a different column
         if (column !== card.parentElement) {
             column.appendChild(card);
             card.classList.remove('opacity-50');
             
-            const newStatus = column.dataset.status;
             const projectId = card.dataset.projectId;
             
-            updateProjectStatus(projectId, newStatus);
+            if (type === 'status') {
+                const newStatus = column.dataset.status;
+                updateProjectStatus(projectId, newStatus);
+            } else if (type === 'phase') {
+                const newPhase = column.dataset.phase;
+                updateProjectPhase(projectId, newPhase);
+            }
+            
             updateCounts();
         } else {
             card.classList.remove('opacity-50');
@@ -245,8 +288,31 @@
             if (data.success) {
                 console.log('Status updated');
             } else {
-                alert('Erreur lors de la mise à jour du statut');
-                location.reload(); // Revert changes on error
+                alert('Erreur: ' + data.message);
+                location.reload();
+            }
+        })
+        .catch((error) => {
+            console.error('Error:', error);
+            alert('Erreur de connexion');
+        });
+    }
+
+    function updateProjectPhase(id, phase) {
+        fetch(`/projects/${id}/update_phase`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ phase: phase })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                console.log('Phase updated');
+            } else {
+                alert('Erreur: ' + data.message);
+                location.reload();
             }
         })
         .catch((error) => {
@@ -256,11 +322,21 @@
     }
 
     function updateCounts() {
-        const columns = document.querySelectorAll('.kanban-column');
-        columns.forEach(col => {
+        // Status counts
+        const statusColumns = document.querySelectorAll('.kanban-column[data-status]');
+        statusColumns.forEach(col => {
             const status = col.dataset.status;
             const count = col.children.length;
             const badge = document.querySelector(`.count-badge[data-status="${status}"]`);
+            if (badge) badge.textContent = count;
+        });
+
+        // Phase counts
+        const phaseColumns = document.querySelectorAll('.kanban-column[data-phase]');
+        phaseColumns.forEach(col => {
+            const phase = col.dataset.phase;
+            const count = col.children.length;
+            const badge = document.querySelector(`.count-badge[data-phase="${phase}"]`);
             if (badge) badge.textContent = count;
         });
     }

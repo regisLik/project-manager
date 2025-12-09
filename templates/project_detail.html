@@ -114,13 +114,18 @@
                     <nav class="-mb-px flex" aria-label="Tabs">
                         <button @click="activeTab = 'current'" 
                             :class="activeTab === 'current' ? 'border-primary text-primary' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
-                            class="w-1/2 py-4 px-1 text-center border-b-2 font-medium text-sm">
+                            class="w-1/3 py-4 px-1 text-center border-b-2 font-medium text-sm">
                             Actuel
                         </button>
                         <button @click="activeTab = 'future'" 
                             :class="activeTab === 'future' ? 'border-primary text-primary' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
-                            class="w-1/2 py-4 px-1 text-center border-b-2 font-medium text-sm">
-                            Futur Upgrade
+                            class="w-1/3 py-4 px-1 text-center border-b-2 font-medium text-sm">
+                            Future Upgrade
+                        </button>
+                        <button @click="activeTab = 'documents'" 
+                            :class="activeTab === 'documents' ? 'border-primary text-primary' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
+                            class="w-1/3 py-4 px-1 text-center border-b-2 font-medium text-sm">
+                            Documents
                         </button>
                     </nav>
                 </div>
@@ -285,97 +290,113 @@
                     </div>
                 </div>
 
-                <!-- Tab Content: Futur Upgrade -->
+
+
+
+
+                <!-- Tab Content: Future Upgrade -->
                 <div x-show="activeTab === 'future'" class="p-6">
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <!-- User Request -->
-                        <div class="bg-gray-50 dark:bg-slate-700/50 p-4 rounded-lg border border-gray-200 dark:border-slate-600">
-                            <h4 class="text-sm font-bold text-gray-900 dark:text-white mb-3">Demande Utilisateur</h4>
-                            <div class="space-y-2">
-                                <label class="block text-xs text-gray-500">Type de demande</label>
-                                <select class="w-full rounded-md border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-sm py-1.5"
-                                        onchange="updateField('user_request_type', this.value)">
-                                    <option value="">Sélectionner...</option>
-                                    <option value="Ajout de fonctionnalité" {% if selected_version.user_request_type == 'Ajout de fonctionnalité' %}selected{% endif %}>Ajout de fonctionnalité</option>
-                                    <option value="Modification de fonctionnalité" {% if selected_version.user_request_type == 'Modification de fonctionnalité' %}selected{% endif %}>Modification de fonctionnalité</option>
-                                    <option value="Suppression de fonctionnalité" {% if selected_version.user_request_type == 'Suppression de fonctionnalité' %}selected{% endif %}>Suppression de fonctionnalité</option>
-                                    <option value="Ne concerne pas les utilisateurs" {% if selected_version.user_request_type == 'Ne concerne pas les utilisateurs' %}selected{% endif %}>Ne concerne pas les utilisateurs</option>
-                                </select>
-                            </div>
-                        </div>
-
-                        <!-- Technical Request -->
-                        <div class="bg-gray-50 dark:bg-slate-700/50 p-4 rounded-lg border border-gray-200 dark:border-slate-600">
-                            <h4 class="text-sm font-bold text-gray-900 dark:text-white mb-3">Demande Technique</h4>
-                            <div class="space-y-2">
-                                <label class="block text-xs text-gray-500">Type de demande</label>
-                                <select class="w-full rounded-md border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-sm py-1.5"
-                                        onchange="updateField('tech_request_type', this.value)">
-                                    <option value="">Sélectionner...</option>
-                                    <option value="Ajout de fonctionnalité" {% if selected_version.tech_request_type == 'Ajout de fonctionnalité' %}selected{% endif %}>Ajout de fonctionnalité</option>
-                                    <option value="Modification de fonctionnalité" {% if selected_version.tech_request_type == 'Modification de fonctionnalité' %}selected{% endif %}>Modification de fonctionnalité</option>
-                                    <option value="Suppression de fonctionnalité" {% if selected_version.tech_request_type == 'Suppression de fonctionnalité' %}selected{% endif %}>Suppression de fonctionnalité</option>
-                                    <option value="Refactorisation" {% if selected_version.tech_request_type == 'Refactorisation' %}selected{% endif %}>Refactorisation</option>
-                                    <option value="Migration" {% if selected_version.tech_request_type == 'Migration' %}selected{% endif %}>Migration</option>
-                                    <option value="Optimization" {% if selected_version.tech_request_type == 'Optimization' %}selected{% endif %}>Optimization</option>
-                                    <option value="Refonte graphique" {% if selected_version.tech_request_type == 'Refonte graphique' %}selected{% endif %}>Refonte graphique</option>
-                                </select>
-                            </div>
-                        </div>
-
-                        <!-- Improvement Plan -->
-                        <div class="bg-gray-50 dark:bg-slate-700/50 p-4 rounded-lg border border-gray-200 dark:border-slate-600">
-                            <h4 class="text-sm font-bold text-gray-900 dark:text-white mb-3">Planification</h4>
-                            <div class="space-y-4">
+                    <!-- Statistics Cards -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                        <!-- Total Requests -->
+                        <div class="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20 rounded-lg p-6 border border-blue-200 dark:border-blue-700">
+                            <div class="flex items-center justify-between">
                                 <div>
-                                    <label class="block text-xs text-gray-500 mb-1">Amélioration prévue ?</label>
-                                    <select class="w-full rounded-md border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-sm py-1.5"
-                                            onchange="updateField('planned_improvement', this.value)">
-                                        <option value="Not decided" {% if selected_version.planned_improvement == 'Not decided' %}selected{% endif %}>Pas encore décidé</option>
-                                        <option value="Yes" {% if selected_version.planned_improvement == 'Yes' %}selected{% endif %}>Oui</option>
-                                        <option value="No" {% if selected_version.planned_improvement == 'No' %}selected{% endif %}>Non</option>
-                                    </select>
+                                    <p class="text-sm font-medium text-blue-600 dark:text-blue-400">Demandes Totales</p>
+                                    <p class="text-4xl font-bold text-blue-900 dark:text-blue-300 mt-2">
+                                        {{ selected_version.requests|length if selected_version.requests else 0 }}
+                                    </p>
                                 </div>
-                                <div>
-                                    <label class="block text-xs text-gray-500 mb-1">Type d'amélioration</label>
-                                    <select class="w-full rounded-md border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-sm py-1.5"
-                                            onchange="updateField('improvement_type', this.value)">
-                                        <option value="Not decided" {% if selected_version.improvement_type == 'Not decided' %}selected{% endif %}>Pas encore décidé</option>
-                                        <option value="Patch" {% if selected_version.improvement_type == 'Patch' %}selected{% endif %}>Patch (+0.0.1)</option>
-                                        <option value="Minor" {% if selected_version.improvement_type == 'Minor' %}selected{% endif %}>Mineur (+0.1.0)</option>
-                                        <option value="Major" {% if selected_version.improvement_type == 'Major' %}selected{% endif %}>Majeur (+1.0.0)</option>
-                                    </select>
+                                <div class="p-3 bg-blue-200 dark:bg-blue-800/50 rounded-lg">
+                                    <svg class="w-10 h-10 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+                                    </svg>
                                 </div>
                             </div>
                         </div>
 
-                        <!-- Assessment -->
-                        <div class="bg-gray-50 dark:bg-slate-700/50 p-4 rounded-lg border border-gray-200 dark:border-slate-600">
-                            <h4 class="text-sm font-bold text-gray-900 dark:text-white mb-3">Évaluation</h4>
-                            <div class="space-y-4">
+                        <!-- Priority High/Urgent -->
+                        <div class="bg-gradient-to-br from-red-50 to-red-100 dark:from-red-900/20 dark:to-red-800/20 rounded-lg p-6 border border-red-200 dark:border-red-700">
+                            <div class="flex items-center justify-between">
                                 <div>
-                                    <label class="block text-xs text-gray-500 mb-1">Niveau de difficulté</label>
-                                    <select class="w-full rounded-md border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-sm py-1.5"
-                                            onchange="updateField('difficulty_level', this.value)">
-                                        <option value="Not decided" {% if selected_version.difficulty_level == 'Not decided' %}selected{% endif %}>Pas encore décidé</option>
-                                        <option value="Easy" {% if selected_version.difficulty_level == 'Easy' %}selected{% endif %}>Easy</option>
-                                        <option value="Medium" {% if selected_version.difficulty_level == 'Medium' %}selected{% endif %}>Moyen</option>
-                                        <option value="Hard" {% if selected_version.difficulty_level == 'Hard' %}selected{% endif %}>Hard</option>
-                                    </select>
+                                    <p class="text-sm font-medium text-red-600 dark:text-red-400">Priorité Haute</p>
+                                    {% set high_priority = selected_version.requests|selectattr('priority_level', 'in', ['High', 'Urgent'])|list|length if selected_version.requests else 0 %}
+                                    <p class="text-4xl font-bold text-red-900 dark:text-red-300 mt-2">{{ high_priority }}</p>
+                                    <p class="text-xs text-red-600 dark:text-red-400 mt-1">
+                                        {% if selected_version.requests %}
+                                            Urgent: {{ selected_version.requests|selectattr('priority_level', 'equalto', 'Urgent')|list|length }}
+                                        {% else %}
+                                            Urgent: 0
+                                        {% endif %}
+                                    </p>
                                 </div>
+                                <div class="p-3 bg-red-200 dark:bg-red-800/50 rounded-lg">
+                                    <svg class="w-10 h-10 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                                    </svg>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Complexity Hard -->
+                        <div class="bg-gradient-to-br from-orange-50 to-orange-100 dark:from-orange-900/20 dark:to-orange-800/20 rounded-lg p-6 border border-orange-200 dark:border-orange-700">
+                            <div class="flex items-center justify-between">
                                 <div>
-                                    <label class="block text-xs text-gray-500 mb-1">Priorité</label>
-                                    <select class="w-full rounded-md border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-sm py-1.5"
-                                            onchange="updateField('priority_level', this.value)">
-                                        <option value="Low" {% if selected_version.priority_level == 'Low' %}selected{% endif %}>Low</option>
-                                        <option value="Medium" {% if selected_version.priority_level == 'Medium' %}selected{% endif %}>Medium</option>
-                                        <option value="High" {% if selected_version.priority_level == 'High' %}selected{% endif %}>High</option>
-                                        <option value="Urgent" {% if selected_version.priority_level == 'Urgent' %}selected{% endif %}>Urgent</option>
-                                    </select>
+                                    <p class="text-sm font-medium text-orange-600 dark:text-orange-400">Complexes</p>
+                                    {% set hard_count = selected_version.requests|selectattr('difficulty_level', 'equalto', 'Hard')|list|length if selected_version.requests else 0 %}
+                                    <p class="text-4xl font-bold text-orange-900 dark:text-orange-300 mt-2">{{ hard_count }}</p>
+                                    <p class="text-xs text-orange-600 dark:text-orange-400 mt-1">
+                                        {% if selected_version.requests %}
+                                            Medium: {{ selected_version.requests|selectattr('difficulty_level', 'equalto', 'Medium')|list|length }}
+                                        {% else %}
+                                            Medium: 0
+                                        {% endif %}
+                                    </p>
+                                </div>
+                                <div class="p-3 bg-orange-200 dark:bg-orange-800/50 rounded-lg">
+                                    <svg class="w-10 h-10 text-orange-600 dark:text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                                    </svg>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Approved -->
+                        <div class="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-800/20 rounded-lg p-6 border border-green-200 dark:border-green-700">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <p class="text-sm font-medium text-green-600 dark:text-green-400">Approuvées</p>
+                                    {% set approved_count = selected_version.requests|selectattr('planned_improvement', 'equalto', 'Yes')|list|length if selected_version.requests else 0 %}
+                                    <p class="text-4xl font-bold text-green-900 dark:text-green-300 mt-2">{{ approved_count }}</p>
+                                    <p class="text-xs text-green-600 dark:text-green-400 mt-1">
+                                        {% if selected_version.requests %}
+                                            En attente: {{ selected_version.requests|selectattr('planned_improvement', 'equalto', 'Not decided')|list|length }}
+                                        {% else %}
+                                            En attente: 0
+                                        {% endif %}
+                                    </p>
+                                </div>
+                                <div class="p-3 bg-green-200 dark:bg-green-800/50 rounded-lg">
+                                    <svg class="w-10 h-10 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                    </svg>
                                 </div>
                             </div>
                         </div>
                     </div>
+
+                    <!-- View All Requests Button -->
+                    <div class="flex justify-center mb-6">
+                        <a href="{{ url_for('requests_list', project_id=project.id) }}" 
+                           class="inline-flex items-center px-6 py-3 bg-primary text-white rounded-lg font-medium hover:bg-blue-700 transition-colors shadow-md">
+                            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                            </svg>
+                            Voir toutes les demandes
+                        </a>
+                    </div>
+
                     
                     <!-- New Version Button in Future Upgrade Tab -->
                     <div class="mt-6 flex justify-end border-t border-gray-200 dark:border-slate-700 pt-6">
@@ -385,12 +406,67 @@
                         </button>
                     </div>
                 </div>
+
+                <!-- Tab Content: Documents -->
+                <div x-show="activeTab === 'documents'" class="p-6">
+                    <div class="mb-6 bg-gray-50 dark:bg-slate-700/50 p-4 rounded-lg border border-gray-200 dark:border-slate-600">
+                        <h4 class="text-sm font-bold text-gray-900 dark:text-white mb-3">Ajouter un document</h4>
+                        <form action="{{ url_for('upload_document', id=project.id) }}" method="POST" enctype="multipart/form-data" class="flex gap-4 items-end">
+                            <div class="flex-1">
+                                <label class="block text-xs text-gray-500 mb-1">Nom du document (Optionnel)</label>
+                                <input type="text" name="name" class="w-full rounded-md border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-sm py-2 px-3">
+                            </div>
+                            <div class="flex-1">
+                                <label class="block text-xs text-gray-500 mb-1">Fichier</label>
+                                <input type="file" name="file" required class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
+                            </div>
+                            <button type="submit" class="px-4 py-2 bg-primary text-white rounded-md text-sm font-medium hover:bg-blue-600">Ajouter</button>
+                        </form>
+                    </div>
+
+                    <div class="bg-white dark:bg-slate-800 rounded-lg border border-gray-200 dark:border-slate-700 overflow-hidden">
+                        <table class="min-w-full divide-y divide-gray-200 dark:divide-slate-700">
+                            <thead class="bg-gray-50 dark:bg-slate-700">
+                                <tr>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Nom</th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Date</th>
+                                    <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody class="bg-white dark:bg-slate-800 divide-y divide-gray-200 dark:divide-slate-700">
+                                {% for doc in project.documents %}
+                                <tr>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <div class="text-sm font-medium text-gray-900 dark:text-white">{{ doc.name }}</div>
+                                        <div class="text-xs text-gray-500">{{ doc.filename }}</div>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                                        {{ doc.uploaded_at.strftime('%d/%m/%Y %H:%M') }}
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                        <a href="{{ url_for('view_document', id=doc.id) }}" target="_blank" class="text-primary hover:text-blue-900 dark:hover:text-blue-400 mr-4">Voir</a>
+                                        <form action="{{ url_for('delete_document', id=doc.id) }}" method="POST" class="inline" onsubmit="return confirm('Supprimer ce document ?');">
+                                            <button type="submit" class="text-red-600 hover:text-red-900 dark:hover:text-red-400">Supprimer</button>
+                                        </form>
+                                    </td>
+                                </tr>
+                                {% else %}
+                                <tr>
+                                    <td colspan="3" class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">Aucun document</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
             </div>
             {% else %}
             <div class="bg-white dark:bg-slate-800 rounded-lg shadow-lg p-12 text-center">
                 <p class="text-gray-500 dark:text-gray-400">Aucune version disponible pour ce projet.</p>
             </div>
             {% endif %}
+
+
 
             <!-- Custom Fields Section -->
             <div class="bg-white dark:bg-slate-800 rounded-lg shadow-lg overflow-hidden">
@@ -560,6 +636,32 @@
                         if (newValue === 'Working') this.classList.add('text-green-600');
                         else if (newValue === 'Not Working') this.classList.add('text-red-600');
                         else this.classList.add('text-yellow-600');
+                    } else if (fieldName === 'user_request_type') {
+                        this.classList.remove('bg-green-100', 'text-green-800', 'bg-orange-100', 'text-orange-800', 'bg-red-100', 'text-red-800', 'bg-gray-100', 'text-gray-800');
+                        if (newValue.includes('Ajout')) this.classList.add('bg-green-100', 'text-green-800');
+                        else if (newValue.includes('Modification')) this.classList.add('bg-orange-100', 'text-orange-800');
+                        else if (newValue.includes('Suppression')) this.classList.add('bg-red-100', 'text-red-800');
+                        else this.classList.add('bg-gray-100', 'text-gray-800');
+                    } else if (fieldName === 'tech_request_type') {
+                        this.classList.remove('bg-purple-100', 'text-purple-800', 'bg-green-100', 'text-green-800', 'bg-orange-100', 'text-orange-800', 'bg-blue-100', 'text-blue-800', 'bg-gray-100', 'text-gray-800');
+                        if (newValue === 'Refactorisation') this.classList.add('bg-purple-100', 'text-purple-800');
+                        else if (newValue.includes('Ajout')) this.classList.add('bg-green-100', 'text-green-800');
+                        else if (newValue.includes('Modification')) this.classList.add('bg-orange-100', 'text-orange-800');
+                        else if (newValue === 'Migration') this.classList.add('bg-blue-100', 'text-blue-800');
+                        else this.classList.add('bg-gray-100', 'text-gray-800');
+                    } else if (fieldName === 'user_request_type') {
+                        this.classList.remove('bg-green-100', 'text-green-800', 'bg-orange-100', 'text-orange-800', 'bg-red-100', 'text-red-800', 'bg-gray-100', 'text-gray-800');
+                        if (newValue.includes('Ajout')) this.classList.add('bg-green-100', 'text-green-800');
+                        else if (newValue.includes('Modification')) this.classList.add('bg-orange-100', 'text-orange-800');
+                        else if (newValue.includes('Suppression')) this.classList.add('bg-red-100', 'text-red-800');
+                        else this.classList.add('bg-gray-100', 'text-gray-800');
+                    } else if (fieldName === 'tech_request_type') {
+                        this.classList.remove('bg-purple-100', 'text-purple-800', 'bg-green-100', 'text-green-800', 'bg-orange-100', 'text-orange-800', 'bg-blue-100', 'text-blue-800', 'bg-gray-100', 'text-gray-800');
+                        if (newValue === 'Refactorisation') this.classList.add('bg-purple-100', 'text-purple-800');
+                        else if (newValue.includes('Ajout')) this.classList.add('bg-green-100', 'text-green-800');
+                        else if (newValue.includes('Modification')) this.classList.add('bg-orange-100', 'text-orange-800');
+                        else if (newValue === 'Migration') this.classList.add('bg-blue-100', 'text-blue-800');
+                        else this.classList.add('bg-gray-100', 'text-gray-800');
                     }
                     
                     // Add to pending changes
@@ -657,6 +759,184 @@
     // Helper for Future Upgrade fields (Selects)
     function updateField(fieldName, value) {
         addToPendingChanges(fieldName, value);
+    }
+
+    // Multi-select badge toggle
+    function toggleBadge(fieldName, value, button) {
+        const isSelected = button.dataset.selected === 'true';
+        
+        // Toggle selection state
+        button.dataset.selected = isSelected ? 'false' : 'true';
+        
+        // Update button styling
+        if (!isSelected) {
+            // Select
+            button.classList.remove('bg-gray-200', 'dark:bg-slate-600', 'text-gray-700', 'dark:text-gray-300', 'hover:bg-gray-300', 'dark:hover:bg-slate-500');
+            
+            // Apply color based on type
+            if (value.includes('Ajout')) {
+                button.classList.add('bg-green-500', 'text-white');
+            } else if (value.includes('Modification')) {
+                button.classList.add('bg-orange-500', 'text-white');
+            } else if (value.includes('Suppression')) {
+                button.classList.add('bg-red-500', 'text-white');
+            } else if (value === 'Refactorisation') {
+                button.classList.add('bg-purple-500', 'text-white');
+            } else if (value === 'Migration') {
+                button.classList.add('bg-blue-500', 'text-white');
+            } else {
+                button.classList.add('bg-gray-500', 'text-white');
+            }
+        } else {
+            // Deselect
+            button.classList.remove('bg-green-500', 'bg-orange-500', 'bg-red-500', 'bg-purple-500', 'bg-blue-500', 'bg-gray-500', 'text-white');
+            button.classList.add('bg-gray-200', 'dark:bg-slate-600', 'text-gray-700', 'dark:text-gray-300', 'hover:bg-gray-300', 'dark:hover:bg-slate-500');
+        }
+        
+        // Collect all selected values for this field
+        const container = button.parentElement;
+        const selectedButtons = container.querySelectorAll('button[data-selected="true"]');
+        const selectedValues = Array.from(selectedButtons).map(btn => btn.textContent.trim());
+        
+        // Update field with comma-separated values
+        addToPendingChanges(fieldName, selectedValues.join(','));
+    }
+
+    // Context Request CRUD operations
+    async function addContextRequest() {
+        try {
+            const response = await fetch(`/api/version/{{ selected_version.id }}/context_requests`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    requester: '',
+                    description: ''
+                })
+            });
+            
+            if (response.ok) {
+                const data = await response.json();
+                location.reload(); // Reload to show new request
+            } else {
+                alert('Erreur lors de l\'ajout');
+            }
+        } catch (e) {
+            console.error(e);
+            alert('Erreur réseau');
+        }
+    }
+
+    async function updateContextRequest(requestId, field, value) {
+        try {
+            const response = await fetch(`/api/context_request/${requestId}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    field: field,
+                    value: value
+                })
+            });
+            
+            if (!response.ok) {
+                alert('Erreur lors de la mise à jour');
+            }
+        } catch (e) {
+            console.error(e);
+            alert('Erreur réseau');
+        }
+    }
+
+    async function deleteContextRequest(requestId) {
+        if (!confirm('Supprimer cette demande ?')) return;
+        
+        try {
+            const response = await fetch(`/api/context_request/${requestId}`, {
+                method: 'DELETE'
+            });
+            
+            if (response.ok) {
+                location.reload();
+            } else {
+                alert('Erreur lors de la suppression');
+            }
+        } catch (e) {
+            console.error(e);
+            alert('Erreur réseau');
+        }
+    }
+
+
+    // Update individual request field (for table)
+    async function updateRequestField(requestId, field, value) {
+        try {
+            const response = await fetch(`/api/context_request/${requestId}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    field: field,
+                    value: value
+                })
+            });
+            
+            if (!response.ok) {
+                alert('Erreur lors de la mise à jour');
+            }
+        } catch (e) {
+            console.error(e);
+            alert('Erreur réseau');
+        }
+    }
+
+    // Toggle badge for request types in table
+    function toggleRequestBadge(requestId, type, button) {
+        const isSelected = button.dataset.selected === 'true';
+        
+        // Toggle selection state
+        button.dataset.selected = isSelected ? 'false' : 'true';
+        
+        // Update button styling
+        if (!isSelected) {
+            // Select
+            button.classList.remove('bg-gray-200', 'dark:bg-slate-600', 'text-gray-700', 'dark:text-gray-300', 'hover:bg-gray-300');
+            
+            // Apply color based on type
+            if (type.includes('Ajout')) {
+                button.classList.add('bg-green-500', 'text-white');
+            } else if (type.includes('Modification')) {
+                button.classList.add('bg-orange-500', 'text-white');
+            } else if (type.includes('Suppression')) {
+                button.classList.add('bg-red-500', 'text-white');
+            } else if (type === 'Refactorisation') {
+                button.classList.add('bg-purple-500', 'text-white');
+            } else if (type === 'Migration') {
+                button.classList.add('bg-blue-500', 'text-white');
+            } else {
+                button.classList.add('bg-gray-500', 'text-white');
+            }
+        } else {
+            // Deselect
+            button.classList.remove('bg-green-500', 'bg-orange-500', 'bg-red-500', 'bg-purple-500', 'bg-blue-500', 'bg-gray-500', 'text-white');
+            button.classList.add('bg-gray-200', 'dark:bg-slate-600', 'text-gray-700', 'dark:text-gray-300', 'hover:bg-gray-300');
+        }
+        
+        // Collect all selected values for this request
+        const container = button.parentElement;
+        const selectedButtons = container.querySelectorAll('button[data-selected="true"]');
+        const selectedValues = Array.from(selectedButtons).map(btn => btn.textContent.trim());
+        
+        // Separate into user and tech types
+        const userTypes = selectedValues.filter(v => ['Ajout', 'Modification', 'Suppression'].includes(v));
+        const techTypes = selectedValues.filter(v => !userTypes.includes(v));
+        
+        // Update both fields
+        updateRequestField(requestId, 'user_request_type', userTypes.join(','));
+        updateRequestField(requestId, 'tech_request_type', techTypes.join(','));
     }
 
 

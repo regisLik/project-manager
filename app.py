@@ -1,8 +1,11 @@
-from flask import Flask, render_template, request, redirect, url_for, flash, make_response
+from flask import Flask, render_template, request, redirect, url_for, flash, make_response, jsonify
 from flask_sqlalchemy import SQLAlchemy
 import os
 from datetime import datetime, timedelta
 import calendar
+from werkzeug.utils import secure_filename
+from flask import send_from_directory
+
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///projects.db'
@@ -81,6 +84,8 @@ class ProjectVersion(db.Model):
     pause_end = db.Column(db.Date, nullable=True)
     
     # Future Upgrade / Planning Fields
+    request_description = db.Column(db.Text, nullable=True) # New: Description of the request
+    requester = db.Column(db.String(100), nullable=True) # New: Who requested it
     user_request_type = db.Column(db.String(50), nullable=True) # Add feature, Modify...
     tech_request_type = db.Column(db.String(50), nullable=True) # Refactor, Migration...
     planned_improvement = db.Column(db.String(20), default='Not decided') # Yes, No, Not decided
@@ -151,6 +156,40 @@ class CustomField(db.Model):
     value = db.Column(db.String(200))
     
     project = db.relationship('Project', backref=db.backref('custom_fields', lazy=True, cascade="all, delete-orphan"))
+
+class Document(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    project_id = db.Column(db.Integer, db.ForeignKey('project.id'), nullable=False)
+    name = db.Column(db.String(100), nullable=False)
+    filename = db.Column(db.String(200), nullable=False)
+    uploaded_at = db.Column(db.DateTime, default=datetime.now)
+    
+    project = db.relationship('Project', backref=db.backref('documents', lazy=True, cascade="all, delete-orphan"))
+
+class ContextRequest(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    version_id = db.Column(db.Integer, db.ForeignKey('project_version.id'), nullable=False)
+    requester = db.Column(db.String(100))
+    requester_role = db.Column(db.String(50))  # New: Client, Manager, Developer, etc.
+    description = db.Column(db.Text)
+    
+    # Request types (comma-separated for multi-select)
+    user_request_type = db.Column(db.String(200))
+    tech_request_type = db.Column(db.String(200))
+    
+    # Planning fields
+    planned_improvement = db.Column(db.String(20), default='Not decided')
+    improvement_type = db.Column(db.String(20), default='Not decided')
+    
+    # Assessment fields
+    difficulty_level = db.Column(db.String(20), default='Not decided')
+    priority_level = db.Column(db.String(20), default='Medium')
+    
+    # Approval status
+    approved = db.Column(db.String(20), default='En attente')  # En attente, Approuvé, Rejeté
+    
+    version = db.relationship('ProjectVersion', backref=db.backref('requests', lazy=True, cascade="all, delete-orphan"))
+
 
 def get_calendar_data():
     now = datetime.now()
@@ -489,6 +528,59 @@ def calculate_next_version(current_version_str, improvement_type):
     except:
         return current_version_str
 
+@app.route('/requests')
+def requests_list():
+    # Get project_id from query params for filtering
+    project_id_filter = request.args.get('project_id', type=int)
+    
+    # Query all requests or filtered by project
+    if project_id_filter:
+        requests_query = db.session.query(ContextRequest, ProjectVersion, Project).join(
+            ProjectVersion, ContextRequest.version_id == ProjectVersion.id
+        ).join(
+            Project, ProjectVersion.project_id == Project.id
+        ).filter(Project.id == project_id_filter).all()
+        filter_project = Project.query.get(project_id_filter)
+    else:
+        requests_query = db.session.query(ContextRequest, ProjectVersion, Project).join(
+            ProjectVersion, ContextRequest.version_id == ProjectVersion.id
+        ).join(
+            Project, ProjectVersion.project_id == Project.id
+        ).all()
+        filter_project = None
+    
+    # Calculate statistics
+    total_requests = len(requests_query)
+    
+    # Priority stats
+    priority_stats = {'Low': 0, 'Medium': 0, 'High': 0, 'Urgent': 0}
+    difficulty_stats = {'Easy': 0, 'Medium': 0, 'Hard': 0, 'Not decided': 0}
+    improvement_stats = {'Yes': 0, 'No': 0, 'Not decided': 0}
+    approval_stats = {'En attente': 0, 'Approuvé': 0, 'Rejeté': 0}
+    
+    for req, version, project in requests_query:
+        if req.priority_level in priority_stats:
+            priority_stats[req.priority_level] += 1
+        if req.difficulty_level in difficulty_stats:
+            difficulty_stats[req.difficulty_level] += 1
+        if req.planned_improvement in improvement_stats:
+            improvement_stats[req.planned_improvement] += 1
+        if req.approved in approval_stats:
+            approval_stats[req.approved] += 1
+    
+    # Get all projects for filter dropdown
+    all_projects = Project.query.all()
+    
+    return render_template('requests.html',
+                         requests_data=requests_query,
+                         total_requests=total_requests,
+                         priority_stats=priority_stats,
+                         difficulty_stats=difficulty_stats,
+                         improvement_stats=improvement_stats,
+                         approval_stats=approval_stats,
+                         all_projects=all_projects,
+                         filter_project=filter_project)
+
 @app.route('/projects/<int:id>/edit', methods=['GET', 'POST'])
 def edit_project(id):
     project = Project.query.get_or_404(id)
@@ -578,8 +670,10 @@ def new_project_version(id):
         # Usually planning fields are for the *next* version, so if we create a new version, 
         # these might become the "current" state or be reset.
         # Let's reset them as they apply to the specific version planning.
-        user_request_type=None,
-        tech_request_type=None,
+        user_request_type=latest.user_request_type, # Copy request type? Maybe
+        tech_request_type=latest.tech_request_type,
+        request_description=latest.request_description,
+        requester=latest.requester,
         planned_improvement='Not decided',
         improvement_type='Not decided',
         difficulty_level='Not decided',
@@ -640,6 +734,26 @@ def update_project_status(id):
     
     return {'success': False, 'message': 'Statut invalide'}, 400
 
+@app.route('/projects/<int:id>/update_phase', methods=['POST'])
+def update_project_phase(id):
+    project = Project.query.get_or_404(id)
+    latest = project.latest_version
+    if not latest:
+        return {'success': False, 'message': 'No version found'}, 404
+        
+    data = request.get_json()
+    new_phase = data.get('phase')
+    
+    # Validate against known phases
+    valid_phases = ['Intake', 'Qualification', 'Scoping', 'Planning', 'Build', 'Test & QA', 'Staging', 'Release', 'Operate', 'Retro', 'Closed']
+    
+    if new_phase in valid_phases:
+        latest.phase = new_phase
+        db.session.commit()
+        return {'success': True, 'message': 'Phase mise à jour'}
+    
+    return {'success': False, 'message': 'Phase invalide'}, 400
+
 @app.route('/projects/<int:id>/add_custom_field', methods=['POST'])
 def add_custom_field(id):
     project = Project.query.get_or_404(id)
@@ -662,6 +776,170 @@ def delete_custom_field(id):
     db.session.commit()
     flash('Champ supprimé.', 'info')
     return redirect(url_for('project_detail', id=project_id))
+
+@app.route('/projects/<int:id>/upload_document', methods=['POST'])
+def upload_document(id):
+    project = Project.query.get_or_404(id)
+    
+    if 'file' not in request.files:
+        flash('Aucun fichier sélectionné', 'error')
+        return redirect(url_for('project_detail', id=id))
+        
+    file = request.files['file']
+    name = request.form.get('name') or file.filename
+    
+    if file.filename == '':
+        flash('Aucun fichier sélectionné', 'error')
+        return redirect(url_for('project_detail', id=id))
+        
+    if file:
+        filename = secure_filename(file.filename)
+        # Add timestamp to filename to avoid collisions
+        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S_')
+        filename = timestamp + filename
+        
+        upload_folder = os.path.join(app.root_path, 'uploads')
+        if not os.path.exists(upload_folder):
+            os.makedirs(upload_folder)
+            
+        file.save(os.path.join(upload_folder, filename))
+        
+        doc = Document(project_id=project.id, name=name, filename=filename)
+        db.session.add(doc)
+        db.session.commit()
+        
+        flash('Document ajouté avec succès', 'success')
+        
+    return redirect(url_for('project_detail', id=id))
+
+@app.route('/documents/<int:id>/view')
+def view_document(id):
+    doc = Document.query.get_or_404(id)
+    upload_folder = os.path.join(app.root_path, 'uploads')
+    return send_from_directory(upload_folder, doc.filename)
+
+@app.route('/documents/<int:id>/delete', methods=['POST'])
+def delete_document(id):
+    doc = Document.query.get_or_404(id)
+    project_id = doc.project_id
+    
+    # Remove file from disk
+    upload_folder = os.path.join(app.root_path, 'uploads')
+    file_path = os.path.join(upload_folder, doc.filename)
+    if os.path.exists(file_path):
+        os.remove(file_path)
+        
+    db.session.delete(doc)
+    db.session.commit()
+    
+    flash('Document supprimé', 'success')
+    return redirect(url_for('project_detail', id=project_id))
+
+# API to get project versions
+@app.route('/api/projects/<int:project_id>/versions')
+def get_project_versions(project_id):
+    versions = ProjectVersion.query.filter_by(project_id=project_id).order_by(ProjectVersion.created_at.desc()).all()
+    return jsonify([{
+        'id': v.id,
+        'version_number': v.version_number
+    } for v in versions])
+
+# Context Request API routes
+@app.route('/api/version/<int:version_id>/context_requests', methods=['POST'])
+def add_context_request(version_id):
+    version = ProjectVersion.query.get_or_404(version_id)
+    data = request.json
+    
+    context_request = ContextRequest(
+        version_id=version_id,
+        requester=data.get('requester', ''),
+        requester_role=data.get('requester_role', ''),
+        description=data.get('description', ''),
+        user_request_type=data.get('user_request_type', ''),
+        tech_request_type=data.get('tech_request_type', ''),
+        planned_improvement=data.get('planned_improvement', 'Not decided'),
+        improvement_type=data.get('improvement_type', 'Not decided'),
+        difficulty_level=data.get('difficulty_level', 'Not decided'),
+        priority_level=data.get('priority_level', 'Medium'),
+        approved=data.get('approved', 'En attente')
+    )
+    
+    db.session.add(context_request)
+    db.session.commit()
+    
+    return jsonify({'success': True, 'id': context_request.id})
+
+@app.route('/api/context_request/<int:request_id>', methods=['GET'])
+def get_context_request(request_id):
+    context_request = ContextRequest.query.get_or_404(request_id)
+    return jsonify({
+        'id': context_request.id,
+        'requester': context_request.requester,
+        'requester_role': context_request.requester_role,
+        'description': context_request.description,
+        'user_request_type': context_request.user_request_type,
+        'tech_request_type': context_request.tech_request_type,
+        'planned_improvement': context_request.planned_improvement,
+        'improvement_type': context_request.improvement_type,
+        'difficulty_level': context_request.difficulty_level,
+        'priority_level': context_request.priority_level,
+        'approved': context_request.approved
+    })
+
+@app.route('/api/context_request/<int:request_id>', methods=['PUT'])
+def update_context_request(request_id):
+    context_request = ContextRequest.query.get_or_404(request_id)
+    data = request.json
+    
+    # Check if it's a single field update or full object update
+    if 'field' in data and 'value' in data:
+        # Single field update (for inline editing)
+        field = data.get('field')
+        value = data.get('value')
+        
+        if field == 'requester':
+            context_request.requester = value
+        elif field == 'requester_role':
+            context_request.requester_role = value
+        elif field == 'description':
+            context_request.description = value
+        elif field == 'user_request_type':
+            context_request.user_request_type = value
+        elif field == 'tech_request_type':
+            context_request.tech_request_type = value
+        elif field == 'planned_improvement':
+            context_request.planned_improvement = value
+        elif field == 'improvement_type':
+            context_request.improvement_type = value
+        elif field == 'difficulty_level':
+            context_request.difficulty_level = value
+        elif field == 'priority_level':
+            context_request.priority_level = value
+        elif field == 'approved':
+            context_request.approved = value
+    else:
+        # Full object update (from edit panel)
+        context_request.requester = data.get('requester', context_request.requester)
+        context_request.requester_role = data.get('requester_role', context_request.requester_role)
+        context_request.description = data.get('description', context_request.description)
+        context_request.user_request_type = data.get('user_request_type', context_request.user_request_type)
+        context_request.tech_request_type = data.get('tech_request_type', context_request.tech_request_type)
+        context_request.planned_improvement = data.get('planned_improvement', context_request.planned_improvement)
+        context_request.improvement_type = data.get('improvement_type', context_request.improvement_type)
+        context_request.difficulty_level = data.get('difficulty_level', context_request.difficulty_level)
+        context_request.priority_level = data.get('priority_level', context_request.priority_level)
+        context_request.approved = data.get('approved', context_request.approved)
+    
+    db.session.commit()
+    return jsonify({'success': True})
+
+@app.route('/api/context_request/<int:request_id>', methods=['DELETE'])
+def delete_context_request(request_id):
+    context_request = ContextRequest.query.get_or_404(request_id)
+    db.session.delete(context_request)
+    db.session.commit()
+    return jsonify({'success': True})
+
 
 @app.route('/api/version/<int:id>/update_field', methods=['POST'])
 def update_version_field(id):
@@ -728,7 +1006,8 @@ def update_version_fields_batch(id):
         'description', 'objective', 'target_audience', 'features', 'whats_new',
         'cost', 'cost_type', 'progress', 'user_request_type', 'tech_request_type',
         'planned_improvement', 'improvement_type', 'difficulty_level', 'priority_level',
-        'duration_days', 'deadline', 'start_date', 'pause_start', 'pause_end'
+        'duration_days', 'deadline', 'start_date', 'pause_start', 'pause_end',
+        'request_description', 'requester'
     ]
     
     date_fields = ['deadline', 'start_date', 'pause_start', 'pause_end']
