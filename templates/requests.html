@@ -16,18 +16,15 @@
             <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Vue globale de toutes les demandes de modification</p>
         </div>
         
-        <!-- Filter -->
+        <!-- Filter Toggle -->
         <div class="flex items-center gap-3">
-            <label class="text-sm font-medium text-gray-700 dark:text-gray-300">Filtrer par projet:</label>
-            <select onchange="window.location.href = this.value" 
-                    class="rounded-md border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-sm py-2 px-3">
-                <option value="/requests" {% if not filter_project %}selected{% endif %}>Tous les projets</option>
-                {% for proj in all_projects %}
-                <option value="/requests?project_id={{ proj.id }}" {% if filter_project and filter_project.id == proj.id %}selected{% endif %}>
-                    {{ proj.name }}
-                </option>
-                {% endfor %}
-            </select>
+             <button onclick="openFilterSidebar()" class="inline-flex items-center px-4 py-2 bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700">
+                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"></path></svg>
+                Filtres
+                {% if filters.project_id or filters.version_id or filters.difficulty != 'all' or filters.priority != 'all' or filters.approved != 'all' or filters.role != 'all' or filters.type != 'all' %}
+                <span class="ml-2 flex h-2 w-2 rounded-full bg-blue-600"></span>
+                {% endif %}
+            </button>
         </div>
     </div>
 
@@ -109,10 +106,9 @@
             </button>
         </div>
 
-        <div class="overflow-x-auto">
+        <div class="overflow-x-auto max-h-[55vh] overflow-y-auto custom-scrollbar">
             <table class="min-w-full divide-y divide-gray-200 dark:divide-slate-700">
-                <thead class="bg-gray-50 dark:bg-slate-700">
-                    <tr>
+                <thead class="bg-gray-50 dark:bg-slate-700 sticky top-0 z-10 shadow-sm">
                         <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Projet</th>
                         <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Version</th>
                         <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Demandeur</th>
@@ -208,12 +204,7 @@
                                     class="text-primary hover:underline text-sm font-medium mr-3">
                                     Éditer
                                 </button>
-                                <button type="button" 
-                                    data-request-id="{{ req.id }}"
-                                    onclick="deleteRequest(this.dataset.requestId)"
-                                    class="text-red-500 hover:text-red-700 text-sm font-medium">
-                                    Supprimer
-                               </button>
+
                             </td>
                         </tr>
                         {% endfor %}
@@ -248,10 +239,20 @@
             
             <!-- Project & Version (read-only) -->
             <div class="bg-gray-50 dark:bg-slate-700 p-3 rounded-md">
-                <p class="text-xs text-gray-500 dark:text-gray-400">Projet</p>
-                <p id="editProject" class="font-medium text-gray-900 dark:text-white"></p>
-                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Version</p>
-                <p id="editVersion" class="font-medium text-gray-900 dark:text-white"></p>
+                <div class="flex justify-between items-start">
+                    <div>
+                        <p class="text-xs text-gray-500 dark:text-gray-400">Projet</p>
+                        <p id="editProject" class="font-medium text-gray-900 dark:text-white"></p>
+                    </div>
+                    <div class="text-right">
+                        <p class="text-xs text-gray-500 dark:text-gray-400">Date</p>
+                        <p id="editDate" class="font-medium text-gray-900 dark:text-white"></p>
+                    </div>
+                </div>
+                <div class="mt-2">
+                    <p class="text-xs text-gray-500 dark:text-gray-400">Version</p>
+                    <p id="editVersion" class="font-medium text-gray-900 dark:text-white"></p>
+                </div>
             </div>
 
             <!-- Demandeur -->
@@ -372,33 +373,99 @@
             <button onclick="saveRequest()" class="px-4 py-2 bg-primary text-white rounded text-sm font-medium hover:bg-blue-600">
                 Enregistrer
             </button>
+            <button onclick="deleteRequestFromEdit()" class="px-4 py-2 bg-red-100 text-red-700 border border-red-200 rounded text-sm font-medium hover:bg-red-200 ml-2">
+                Supprimer
+            </button>
         </div>
     </div>
 </div>
 
 <!-- Add Request Modal -->
 <div id="addRequestModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-    <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white dark:bg-slate-800">
+    <div class="relative top-10 mx-auto p-5 border w-[600px] shadow-lg rounded-md bg-white dark:bg-slate-800 mb-10">
         <div class="mt-3">
             <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-4">Ajouter une demande</h3>
-            <div class="space-y-3">
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Projet</label>
-                    <select id="modalProject" onchange="loadVersions()" class="w-full rounded border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-sm py-2 px-3">
-                        <option value="">Sélectionner un projet</option>
-                        {% for proj in all_projects %}
-                        <option value="{{ proj.id }}">{{ proj.name }}</option>
-                        {% endfor %}
-                    </select>
+            <div class="space-y-4 max-h-[70vh] overflow-y-auto custom-scrollbar pr-2">
+                <!-- Project & Version -->
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Projet</label>
+                        <select id="modalProject" onchange="loadVersions()" class="w-full rounded border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-sm py-2 px-3">
+                            <option value="">Sélectionner un projet</option>
+                            {% for proj in all_projects %}
+                            <option value="{{ proj.id }}">{{ proj.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Version</label>
+                        <select id="modalVersion" class="w-full rounded border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-sm py-2 px-3">
+                            <option value="">Sélectionner une version</option>
+                        </select>
+                    </div>
                 </div>
+
+                <!-- Requester Info -->
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Demandeur</label>
+                        <input type="text" id="modalRequester" class="w-full rounded border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-sm py-2 px-3">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Rôle</label>
+                        <select id="modalRole" class="w-full rounded border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-sm py-2 px-3">
+                            <option value="Client">Client</option>
+                            <option value="Manager">Manager</option>
+                            <option value="Developer">Developer</option>
+                            <option value="Product Owner">Product Owner</option>
+                            <option value="Autre">Autre</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Description -->
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Version</label>
-                    <select id="modalVersion" class="w-full rounded border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-sm py-2 px-3">
-                        <option value="">Sélectionner une version</option>
-                    </select>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Description</label>
+                    <textarea id="modalDescription" rows="3" class="w-full rounded border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-sm py-2 px-3"></textarea>
+                </div>
+
+                <!-- Request Type -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Type de demande</label>
+                    <div class="grid grid-cols-2 gap-2">
+                        <label class="flex items-center"><input type="checkbox" value="Ajout" class="modal-user-type mr-2"> <span class="text-sm dark:text-gray-300">Ajout</span></label>
+                        <label class="flex items-center"><input type="checkbox" value="Modification" class="modal-user-type mr-2"> <span class="text-sm dark:text-gray-300">Modification</span></label>
+                        <label class="flex items-center"><input type="checkbox" value="Suppression" class="modal-user-type mr-2"> <span class="text-sm dark:text-gray-300">Suppression</span></label>
+                        <label class="flex items-center"><input type="checkbox" value="Refactorisation" class="modal-tech-type mr-2"> <span class="text-sm dark:text-gray-300">Refactorisation</span></label>
+                        <label class="flex items-center"><input type="checkbox" value="Migration" class="modal-tech-type mr-2"> <span class="text-sm dark:text-gray-300">Migration</span></label>
+                        <label class="flex items-center"><input type="checkbox" value="Optimization" class="modal-tech-type mr-2"> <span class="text-sm dark:text-gray-300">Optimization</span></label>
+                    </div>
+                </div>
+
+                <!-- Details -->
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Priorité</label>
+                        <select id="modalPriority" class="w-full rounded border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-sm py-2 px-3">
+                            <option value="Low">Low</option>
+                            <option value="Medium" selected>Medium</option>
+                            <option value="High">High</option>
+                            <option value="Urgent">Urgent</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Difficulté</label>
+                        <select id="modalDifficulty" class="w-full rounded border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-sm py-2 px-3">
+                            <option value="Not decided">-</option>
+                            <option value="Easy">Easy</option>
+                            <option value="Medium">Medium</option>
+                            <option value="Hard">Hard</option>
+                        </select>
+                    </div>
                 </div>
             </div>
-            <div class="mt-6 flex justify-end gap-3">
+
+            <div class="mt-6 flex justify-end gap-3 pt-4 border-t border-gray-200 dark:border-slate-700">
                 <button onclick="closeAddRequestModal()" class="px-4 py-2 bg-gray-200 dark:bg-slate-700 text-gray-800 dark:text-gray-200 rounded text-sm font-medium hover:bg-gray-300">
                     Annuler
                 </button>
@@ -519,25 +586,31 @@ async function createRequest() {
         alert('Veuillez sélectionner un projet et une version');
         return;
     }
+
+    // Gather data
+    const userTypes = Array.from(document.querySelectorAll('.modal-user-type:checked')).map(cb => cb.value).join(',');
+    const techTypes = Array.from(document.querySelectorAll('.modal-tech-type:checked')).map(cb => cb.value).join(',');
     
     try {
         const response = await fetch(`/api/version/${versionId}/context_requests`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                requester: '',
-                description: '',
-                requester_role: '',
-                user_request_type: '',
-                tech_request_type: '',
+                requester: document.getElementById('modalRequester').value,
+                requester_role: document.getElementById('modalRole').value,
+                description: document.getElementById('modalDescription').value,
+                user_request_type: userTypes,
+                tech_request_type: techTypes,
                 planned_improvement: 'Not decided',
                 improvement_type: 'Not decided',
-                difficulty_level: 'Not decided',
-                priority_level: 'Medium'
+                difficulty_level: document.getElementById('modalDifficulty').value,
+                priority_level: document.getElementById('modalPriority').value
             })
         });
         
         if (!response.ok) throw new Error('Create failed');
+        
+        closeAddRequestModal();
         location.reload();
     } catch (error) {
         console.error('Error creating request:', error);
@@ -555,6 +628,7 @@ async function openEditPanel(requestId, projectName, versionNumber) {
         document.getElementById('editRequestId').value = requestId;
         document.getElementById('editProject').textContent = projectName;
         document.getElementById('editVersion').textContent = versionNumber;
+        document.getElementById('editDate').textContent = data.created_at ? new Date(data.created_at).toLocaleDateString() : '-';
         document.getElementById('editRequester').value = data.requester || '';
         document.getElementById('editRole').value = data.requester_role || '';
         document.getElementById('editDescription').value = data.description || '';
@@ -630,4 +704,160 @@ async function saveRequest() {
 }
 </script>
 </div>
+
+
+<!-- Backdrop -->
+<div id="filterBackdrop" onclick="closeFilterSidebar()" class="hidden fixed inset-0 bg-gray-900 bg-opacity-50 z-40 transition-opacity duration-300"></div>
+
+<!-- Filter Sidebar (Right Slide-in) -->
+<div id="filterSidebar" class="hidden fixed inset-y-0 right-0 w-80 bg-white dark:bg-slate-800 shadow-2xl z-50 transform transition-transform duration-300">
+    <div class="h-full flex flex-col">
+        <!-- Header -->
+        <div class="px-6 py-4 border-b border-gray-200 dark:border-slate-700 flex justify-between items-center">
+            <h3 class="text-lg font-bold text-gray-900 dark:text-white">Filtres</h3>
+            <button onclick="closeFilterSidebar()" class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+            </button>
+        </div>
+        
+        <!-- Filter Form -->
+        <div class="flex-1 overflow-y-auto p-6">
+            <form action="{{ url_for('requests_list') }}" method="GET" class="space-y-4">
+                <!-- Project -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Projet</label>
+                    <select name="project_id" class="w-full rounded border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-sm py-2 px-3">
+                        <option value="">Tous les projets</option>
+                        {% for proj in all_projects %}
+                        <option value="{{ proj.id }}" {% if filters.project_id == proj.id %}selected{% endif %}>{{ proj.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- Version -->
+                {% if filters.project_id %}
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Version</label>
+                    <select name="version_id" class="w-full rounded border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-sm py-2 px-3">
+                        <option value="">Toutes les versions</option>
+                        {% for ver in all_versions %}
+                        <option value="{{ ver.id }}" {% if filters.version_id == ver.id %}selected{% endif %}>{{ ver.version_number }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                {% endif %}
+
+                <!-- Sort -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Tri par Date</label>
+                    <select name="sort" class="w-full rounded border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-sm py-2 px-3">
+                        <option value="newest" {% if filters.sort == 'newest' %}selected{% endif %}>Plus récent</option>
+                        <option value="oldest" {% if filters.sort == 'oldest' %}selected{% endif %}>Plus ancien</option>
+                    </select>
+                </div>
+                
+                <hr class="border-gray-200 dark:border-slate-700 my-4">
+
+                <!-- Properties -->
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Difficulté</label>
+                        <select name="difficulty" class="w-full rounded border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-sm py-2 px-3">
+                            <option value="all">Tout</option>
+                            <option value="Easy" {% if filters.difficulty == 'Easy' %}selected{% endif %}>Easy</option>
+                            <option value="Medium" {% if filters.difficulty == 'Medium' %}selected{% endif %}>Medium</option>
+                            <option value="Hard" {% if filters.difficulty == 'Hard' %}selected{% endif %}>Hard</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Priorité</label>
+                        <select name="priority" class="w-full rounded border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-sm py-2 px-3">
+                            <option value="all">Tout</option>
+                            <option value="Low" {% if filters.priority == 'Low' %}selected{% endif %}>Low</option>
+                            <option value="Medium" {% if filters.priority == 'Medium' %}selected{% endif %}>Medium</option>
+                            <option value="High" {% if filters.priority == 'High' %}selected{% endif %}>High</option>
+                            <option value="Urgent" {% if filters.priority == 'Urgent' %}selected{% endif %}>Urgent</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Statut d'approbation</label>
+                        <select name="approved" class="w-full rounded border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-sm py-2 px-3">
+                            <option value="all">Tout</option>
+                            <option value="En attente" {% if filters.approved == 'En attente' %}selected{% endif %}>En attente</option>
+                            <option value="Approuvé" {% if filters.approved == 'Approuvé' %}selected{% endif %}>Approuvé</option>
+                            <option value="Rejeté" {% if filters.approved == 'Rejeté' %}selected{% endif %}>Rejeté</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Rôle</label>
+                        <select name="role" class="w-full rounded border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-sm py-2 px-3">
+                            <option value="all">Tout</option>
+                            <option value="Client" {% if filters.role == 'Client' %}selected{% endif %}>Client</option>
+                            <option value="Manager" {% if filters.role == 'Manager' %}selected{% endif %}>Manager</option>
+                            <option value="Developer" {% if filters.role == 'Developer' %}selected{% endif %}>Developer</option>
+                            <option value="Product Owner" {% if filters.role == 'Product Owner' %}selected{% endif %}>Product Owner</option>
+                            <option value="Tester" {% if filters.role == 'Tester' %}selected{% endif %}>Tester</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Type de demande</label>
+                        <select name="type" class="w-full rounded border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-sm py-2 px-3">
+                            <option value="all">Tout</option>
+                            <option value="Ajout" {% if filters.type == 'Ajout' %}selected{% endif %}>Ajout</option>
+                            <option value="Modification" {% if filters.type == 'Modification' %}selected{% endif %}>Modification</option>
+                            <option value="Suppression" {% if filters.type == 'Suppression' %}selected{% endif %}>Suppression</option>
+                            <option value="Refactorisation" {% if filters.type == 'Refactorisation' %}selected{% endif %}>Refactorisation</option>
+                            <option value="Migration" {% if filters.type == 'Migration' %}selected{% endif %}>Migration</option>
+                             <option value="Optimization" {% if filters.type == 'Optimization' %}selected{% endif %}>Optimization</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="pt-4 flex flex-col gap-3">
+                     <button type="submit" class="w-full py-2 bg-primary text-white rounded text-sm font-medium hover:bg-blue-600">Appliquer les filtres</button>
+                     <a href="{{ url_for('requests_list') }}" class="w-full text-center py-2 border border-gray-300 dark:border-slate-600 rounded text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700">Réinitialiser</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+function openFilterSidebar() {
+    document.getElementById('filterSidebar').classList.remove('hidden');
+    document.getElementById('filterBackdrop').classList.remove('hidden');
+}
+
+function closeFilterSidebar() {
+    document.getElementById('filterSidebar').classList.add('hidden');
+    document.getElementById('filterBackdrop').classList.add('hidden');
+}
+
+// Delete request
+async function deleteRequest(requestId) {
+    if (!confirm('Voulez-vous vraiment supprimer cette demande ?')) return;
+    
+    try {
+        const response = await fetch(`/api/context_request/${requestId}`, {
+            method: 'DELETE'
+        });
+        
+        if (!response.ok) throw new Error('Delete failed');
+        location.reload();
+    } catch (error) {
+        console.error('Error deleting request:', error);
+        alert('Erreur lors de la suppression');
+    }
+}
+
+function deleteRequestFromEdit() {
+    const requestId = document.getElementById('editRequestId').value;
+    if(requestId) deleteRequest(requestId);
+}
+</script>
+
 {% endblock %}

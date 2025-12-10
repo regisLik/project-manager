@@ -2,23 +2,34 @@
 
 {% block content %}
 <div class="container mx-auto px-4 py-8">
-    <div class="flex justify-between items-center mb-6">
-        <h2 class="text-2xl font-bold text-gray-800 dark:text-white">Calendrier Gantt</h2>
-        <div class="flex space-x-2">
-            <button onclick="changeView('Day')" class="px-3 py-1 bg-white dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded-md text-sm hover:bg-gray-50 dark:hover:bg-slate-600 transition-colors">Jour</button>
-            <button onclick="changeView('Week')" class="px-3 py-1 bg-white dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded-md text-sm hover:bg-gray-50 dark:hover:bg-slate-600 transition-colors">Semaine</button>
-            <button onclick="changeView('Month')" class="px-3 py-1 bg-primary text-white rounded-md text-sm hover:bg-blue-600 transition-colors">Mois</button>
+    <div class="flex justify-between items-center mb-6" x-data="{ viewMode: 'gantt' }">
+        <h2 class="text-2xl font-bold text-gray-800 dark:text-white">Planning</h2>
+        <div class="flex space-x-2 bg-gray-100 dark:bg-slate-700 p-1 rounded-lg">
+            <button @click="viewMode = 'gantt'; toggleView('gantt')" :class="{'bg-white dark:bg-slate-600 shadow-sm text-gray-900 dark:text-white': viewMode === 'gantt', 'text-gray-500 dark:text-gray-400': viewMode !== 'gantt'}" class="px-3 py-1.5 text-sm font-medium rounded-md transition-all">Gantt</button>
+            <button @click="viewMode = 'calendar'; toggleView('calendar')" :class="{'bg-white dark:bg-slate-600 shadow-sm text-gray-900 dark:text-white': viewMode === 'calendar', 'text-gray-500 dark:text-gray-400': viewMode !== 'calendar'}" class="px-3 py-1.5 text-sm font-medium rounded-md transition-all">Calendrier</button>
         </div>
     </div>
 
-    <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-6 overflow-hidden">
+    <!-- Gantt View Controls -->
+    <div id="gantt-controls" class="flex justify-end mb-4">
+        <div class="flex space-x-2">
+            <button onclick="changeGanttView('Day')" class="gantt-btn px-3 py-1 bg-white dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded-md text-sm hover:bg-gray-50 dark:hover:bg-slate-600 transition-colors">Jour</button>
+            <button onclick="changeGanttView('Week')" class="gantt-btn px-3 py-1 bg-white dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded-md text-sm hover:bg-gray-50 dark:hover:bg-slate-600 transition-colors">Semaine</button>
+            <button onclick="changeGanttView('Month')" class="gantt-btn px-3 py-1 bg-primary text-white rounded-md text-sm hover:bg-blue-600 transition-colors">Mois</button>
+        </div>
+    </div>
+
+    <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-6 overflow-hidden min-h-[600px]">
         <div id="gantt-chart" class="w-full overflow-x-auto custom-scrollbar"></div>
+        <div id="calendar-view" class="hidden"></div>
     </div>
 </div>
 
 <!-- Frappe Gantt CSS & JS -->
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/frappe-gantt@0.6.1/dist/frappe-gantt.css">
 <script src="https://cdn.jsdelivr.net/npm/frappe-gantt@0.6.1/dist/frappe-gantt.min.js"></script>
+<!-- FullCalendar -->
+<script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js'></script>
 
 <script>
     // Data passed from Flask
@@ -48,14 +59,81 @@
         }
     });
 
-    function changeView(mode) {
+    function toggleView(view) {
+        if (view === 'calendar') {
+            document.getElementById('gantt-chart').classList.add('hidden');
+            document.getElementById('gantt-controls').classList.add('hidden');
+            document.getElementById('calendar-view').classList.remove('hidden');
+            
+            // Initialize Calendar if not already done or just render
+            if (calendar) {
+                calendar.render();
+            } else {
+                initCalendar();
+            }
+        } else {
+            document.getElementById('calendar-view').classList.add('hidden');
+            document.getElementById('gantt-chart').classList.remove('hidden');
+            document.getElementById('gantt-controls').classList.remove('hidden');
+        }
+    }
+
+    let calendar;
+    
+    function initCalendar() {
+        const calendarEl = document.getElementById('calendar-view');
+        
+        // Map tasks to FullCalendar events
+        const events = tasks.map(task => ({
+            title: task.name,
+            start: task.start,
+            end: task.end,
+            backgroundColor: getEventColor(task.custom_class),
+            borderColor: getEventColor(task.custom_class),
+            extendedProps: {
+                progress: task.progress
+            }
+        }));
+
+        calendar = new FullCalendar.Calendar(calendarEl, {
+            initialView: 'dayGridMonth',
+            height: 650, // Reduced fixed height
+            headerToolbar: {
+                left: 'prev,next today',
+                center: 'title',
+                right: 'dayGridMonth,timeGridWeek'
+            },
+            locale: 'fr',
+            events: events,
+            eventDidMount: function(info) {
+                // Add tooltip using title attribute for simplicity
+                info.el.title = `${info.event.title} (${info.event.extendedProps.progress}%)`;
+            }
+        });
+        
+        calendar.render();
+    }
+
+    function getEventColor(customClass) {
+        const colors = {
+            'bar-todo': '#94a3b8',
+            'bar-progress': '#3b82f6',
+            'bar-review': '#f59e0b',
+            'bar-done': '#10b981',
+            'bar-overdue': '#ef4444'
+        };
+        return colors[customClass] || '#3b82f6';
+    }
+
+    function changeGanttView(mode) {
         gantt.change_view_mode(mode);
         
         // Update active button style
-        document.querySelectorAll('button').forEach(btn => {
+        const btns = document.querySelectorAll('.gantt-btn');
+        btns.forEach(btn => {
             if(btn.textContent === mode || (mode === 'Month' && btn.textContent === 'Mois') || (mode === 'Week' && btn.textContent === 'Semaine') || (mode === 'Day' && btn.textContent === 'Jour')) {
                 btn.classList.add('bg-primary', 'text-white');
-                btn.classList.remove('bg-white', 'dark:bg-slate-700', 'text-gray-800', 'dark:text-white');
+                btn.classList.remove('bg-white', 'dark:bg-slate-700');
             } else {
                 btn.classList.remove('bg-primary', 'text-white');
                 btn.classList.add('bg-white', 'dark:bg-slate-700');
@@ -110,6 +188,41 @@
     /* Progress bar color */
     .gantt .bar-progress {
         fill: rgba(255, 255, 255, 0.3);
+    }
+    
+    /* FullCalendar Overrides */
+    .fc-event {
+        cursor: pointer;
+    }
+    .fc-theme-standard .fc-scrollgrid {
+        border-color: #e2e8f0; /* gray-200 */
+    }
+    .dark .fc-theme-standard .fc-scrollgrid {
+        border-color: #334155; /* slate-700 */
+    }
+    .dark .fc-theme-standard td, .dark .fc-theme-standard th {
+        border-color: #334155;
+    }
+    .dark .fc .fc-toolbar-title {
+        color: white;
+    }
+    .dark .fc .fc-button-primary {
+        background-color: #334155;
+        border-color: #475569;
+    }
+    .dark .fc .fc-button-primary:hover {
+        background-color: #475569;
+        border-color: #64748b;
+    }
+    .dark .fc .fc-button-active {
+        background-color: #1e293b !important;
+        border-color: #334155 !important;
+    }
+    .dark .fc-daygrid-day-number {
+        color: #cbd5e1;
+    }
+    .dark .fc-col-header-cell-cushion {
+        color: #e2e8f0;
     }
 </style>
 {% endblock %}

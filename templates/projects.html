@@ -4,13 +4,14 @@
 
 {% block content %}
 <!-- Macro for Project Card -->
-{% macro project_card(project) %}
+{% macro project_card(project, view_type) %}
 <div class="bg-white dark:bg-slate-700 p-4 rounded-lg shadow-sm border border-gray-200 dark:border-slate-600 cursor-move hover:shadow-md transition-all group project-card" 
-     draggable="true" 
-     ondragstart="drag(event)" 
-     id="project-{{ project.id }}"
-     data-project-id="{{ project.id }}"
-     data-project-name="{{ project.name|lower }}">
+        draggable="true" 
+        ondragstart="drag(event)" 
+        ondragend="dragEnd(event)"
+        id="project-{{ view_type }}-{{ project.id }}"
+        data-project-id="{{ project.id }}"
+        data-project-name="{{ project.name|lower }}">
     
     <div class="flex justify-between items-start mb-2">
         <span class="text-xs font-medium text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-slate-600 px-2 py-0.5 rounded">{{ project.category }}</span>
@@ -70,6 +71,11 @@
                     class="px-3 py-1.5 text-sm font-medium rounded-md transition-all">
                     Phase
                 </button>
+                <button @click="view = 'list'" 
+                    :class="view === 'list' ? 'bg-white dark:bg-slate-600 shadow-sm text-gray-900 dark:text-white' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700'"
+                    class="px-3 py-1.5 text-sm font-medium rounded-md transition-all">
+                    Liste
+                </button>
             </div>
 
             <div class="relative max-w-md w-full">
@@ -100,7 +106,7 @@
                 </div>
                 <div class="flex-1 p-3 overflow-y-auto custom-scrollbar space-y-3 kanban-column" data-status="Not started" ondrop="drop(event, 'status')" ondragover="allowDrop(event)">
                     {% for project in projects if project.status == 'Not started' %}
-                        {{ project_card(project) }}
+                        {{ project_card(project, 'status') }}
                     {% endfor %}
                 </div>
             </div>
@@ -116,7 +122,7 @@
                 </div>
                 <div class="flex-1 p-3 overflow-y-auto custom-scrollbar space-y-3 kanban-column" data-status="In progress" ondrop="drop(event, 'status')" ondragover="allowDrop(event)">
                     {% for project in projects if project.status == 'In progress' %}
-                        {{ project_card(project) }}
+                        {{ project_card(project, 'status') }}
                     {% endfor %}
                 </div>
             </div>
@@ -132,7 +138,7 @@
                 </div>
                 <div class="flex-1 p-3 overflow-y-auto custom-scrollbar space-y-3 kanban-column" data-status="Review" ondrop="drop(event, 'status')" ondragover="allowDrop(event)">
                     {% for project in projects if project.status == 'Review' %}
-                        {{ project_card(project) }}
+                        {{ project_card(project, 'status') }}
                     {% endfor %}
                 </div>
             </div>
@@ -148,7 +154,7 @@
                 </div>
                 <div class="flex-1 p-3 overflow-y-auto custom-scrollbar space-y-3 kanban-column" data-status="Done" ondrop="drop(event, 'status')" ondragover="allowDrop(event)">
                     {% for project in projects if project.status == 'Done' %}
-                        {{ project_card(project) }}
+                        {{ project_card(project, 'status') }}
                     {% endfor %}
                 </div>
             </div>
@@ -164,7 +170,7 @@
                 </div>
                 <div class="flex-1 p-3 overflow-y-auto custom-scrollbar space-y-3 kanban-column" data-status="Gel" ondrop="drop(event, 'status')" ondragover="allowDrop(event)">
                     {% for project in projects if project.status == 'Gel' %}
-                        {{ project_card(project) }}
+                        {{ project_card(project, 'status') }}
                     {% endfor %}
                 </div>
             </div>
@@ -180,7 +186,7 @@
                 </div>
                 <div class="flex-1 p-3 overflow-y-auto custom-scrollbar space-y-3 kanban-column" data-status="Stopped" ondrop="drop(event, 'status')" ondragover="allowDrop(event)">
                     {% for project in projects if project.status == 'Stopped' %}
-                        {{ project_card(project) }}
+                        {{ project_card(project, 'status') }}
                     {% endfor %}
                 </div>
             </div>
@@ -202,12 +208,107 @@
                 </div>
                 <div class="flex-1 p-3 overflow-y-auto custom-scrollbar space-y-3 kanban-column" data-phase="{{ phase }}" ondrop="drop(event, 'phase')" ondragover="allowDrop(event)">
                     {% for project in projects if project.latest_version and project.latest_version.phase == phase %}
-                        {{ project_card(project) }}
+                        {{ project_card(project, 'phase') }}
                     {% endfor %}
                 </div>
             </div>
             {% endfor %}
         </div>
+    </div>
+
+    <!-- List View - Grouped by Status -->
+    <div x-show="view === 'list'" class="flex-1 overflow-y-auto custom-scrollbar p-1 pb-20" style="display: none;">
+        <div class="space-y-8 max-w-5xl mx-auto">
+            {% set status_colors = {
+                'Not started': 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200',
+                'In progress': 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300',
+                'Review': 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300',
+                'Done': 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300',
+                'Gel': 'bg-cyan-100 text-cyan-800 dark:bg-cyan-900/30 dark:text-cyan-300',
+                'Stopped': 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300'
+            } %}
+            
+            {% for status in ['Not started', 'In progress', 'Review', 'Done', 'Gel', 'Stopped'] %}
+            <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-200 dark:border-slate-700 overflow-hidden">
+                <!-- Section Header -->
+                <div class="px-6 py-4 border-b border-gray-200 dark:border-slate-700 flex justify-between items-center bg-gray-50/50 dark:bg-slate-800">
+                    <div class="flex items-center gap-3">
+                        <h3 class="font-bold text-gray-900 dark:text-white text-lg">{{ status }}</h3>
+                        <span class="px-2.5 py-0.5 rounded-full text-xs font-medium {{ status_colors[status] }}">
+                             {{ projects|selectattr('status', 'equalto', status)|list|length }}
+                        </span>
+                    </div>
+                </div>
+
+                <!-- List Items -->
+                <div class="divide-y divide-gray-100 dark:divide-slate-700">
+                    {% for project in projects if project.status == status %}
+                    <div class="p-4 hover:bg-gray-50 dark:hover:bg-slate-700/50 transition-colors flex items-center gap-4 group">
+                        <!-- Project Icon/Category -->
+                        <div class="flex-shrink-0 w-10 h-10 rounded-lg bg-gray-100 dark:bg-slate-700 flex items-center justify-center text-gray-500 dark:text-gray-400 font-bold text-sm">
+                            {{ project.name[:2]|upper }}
+                        </div>
+
+                        <!-- Main Info -->
+                        <div class="flex-1 min-w-0">
+                            <div class="flex items-center gap-2 mb-1">
+                                <a href="{{ url_for('project_detail', id=project.id) }}" class="text-base font-semibold text-gray-900 dark:text-white hover:text-primary truncate">
+                                    {{ project.name }}
+                                </a>
+                                <span class="text-xs px-2 py-0.5 rounded bg-gray-100 dark:bg-slate-600 text-gray-500 dark:text-gray-400">
+                                    {{ project.category }}
+                                </span>
+                            </div>
+                            <div class="flex items-center gap-4 text-sm text-gray-500 dark:text-gray-400">
+                                <span class="flex items-center gap-1">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path></svg>
+                                    {{ project.latest_version.version_number if project.latest_version else 'v?' }}
+                                </span>
+                                <span class="flex items-center gap-1">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
+                                    {{ project.latest_version.phase if project.latest_version else '?' }}
+                                </span>
+                            </div>
+                        </div>
+
+                        <!-- Progress -->
+                        <div class="w-32 hidden md:block">
+                            <div class="flex justify-between text-xs mb-1">
+                                <span class="text-gray-500">Progression</span>
+                                <span class="font-medium text-gray-700 dark:text-gray-300">{{ project.progress }}%</span>
+                            </div>
+                            <div class="w-full bg-gray-100 dark:bg-slate-600 rounded-full h-1.5">
+                                <div class="bg-primary h-1.5 rounded-full" style="width: {{ project.progress }}%"></div>
+                            </div>
+                        </div>
+
+                        <!-- Team -->
+                        <div class="flex -space-x-2 w-24 justify-end hidden sm:flex">
+                            {% for member in project.team[:3] %}
+                            <img class="inline-block h-8 w-8 rounded-full ring-2 ring-white dark:ring-slate-700" src="https://ui-avatars.com/api/?name=User+{{ member }}&background=random" alt=""/>
+                            {% endfor %}
+                            {% if project.team|length > 3 %}
+                            <span class="flex items-center justify-center h-8 w-8 rounded-full ring-2 ring-white dark:ring-slate-700 bg-gray-100 text-xs font-medium text-gray-600">
+                                +{{ project.team|length - 3 }}
+                            </span>
+                            {% endif %}
+                        </div>
+
+                        <!-- Actions -->
+                        <div class="opacity-0 group-hover:opacity-100 transition-opacity">
+                             <a href="{{ url_for('edit_project', id=project.id) }}" class="text-gray-400 hover:text-blue-500 p-2">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
+                            </a>
+                        </div>
+                    </div>
+                    {% else %}
+                    <div class="p-4 text-sm text-gray-500 dark:text-gray-400 italic text-center">Aucun projet dans ce statut</div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
     </div>
 </div>
 
@@ -246,6 +347,10 @@
             ev.currentTarget.classList.remove('bg-gray-200', 'dark:bg-slate-700');
         });
     });
+
+    function dragEnd(ev) {
+        ev.target.classList.remove('opacity-50');
+    }
 
     function drop(ev, type) {
         ev.preventDefault();

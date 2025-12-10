@@ -24,11 +24,11 @@ MAX_REQUESTS_PER_VERSION = 6
 
 # Listes pour génération réaliste
 CATEGORIES = ['Web', 'Mobile', 'Desktop', 'API', 'Data']
-PHASES = ['Intake', 'Qualification', 'Planning', 'Development', 'Testing', 'Production']
-STATUSES = ['Done', 'In Progress', 'On Hold', 'Stopped']
+PHASES = ['Intake', 'Qualification', 'Planning', 'Build', 'Test & QA', 'Staging', 'Release']
+STATUSES = ['Not started', 'In progress', 'Review', 'Done', 'Gel', 'Stopped']
 APP_STATUSES = ['Working', 'Partially Working', 'Not Working', 'Under Maintenance']
-HOSTING = ['Cloud', 'On-Premise', 'Hybrid', 'Services']
-ACCESSIBILITY = ['Online', 'Offline', 'Hybrid']
+HOSTING = ['Cloud','Services']
+ACCESSIBILITY = ['Online', 'Offline']
 
 ROLES = ['Client', 'Manager', 'Developer', 'Product Owner', 'Designer', 'Tester']
 USER_REQUEST_TYPES = ['Ajout', 'Modification', 'Suppression']
@@ -131,13 +131,11 @@ def generate_request_description():
     return random.choice(descriptions)
 
 def clear_database():
-    """Vide la base de données"""
+    """Vide la base de données et recrée les tables"""
     print("🗑️  Suppression des données existantes...")
-    ContextRequest.query.delete()
-    ProjectVersion.query.delete()
-    Project.query.delete()
-    db.session.commit()
-    print("✅ Base de données vidée")
+    db.drop_all()
+    db.create_all()
+    print("✅ Base de données vidée et tables recréées")
 
 def generate_synthetic_data():
     """Génère toutes les données synthétiques"""
@@ -195,7 +193,7 @@ def generate_synthetic_data():
                 phase=phase,
                 status=status,
                 app_status=random.choice(APP_STATUSES) if status == 'Done' else 'Under Maintenance',
-                integration_level=random.choice(['Local', 'Dev', 'Staging', 'Prod']),
+                integration_level=random.choice(['Local', 'Incoming', 'Prod']),
                 hosting=random.choice(HOSTING),
                 accessibility=random.choice(ACCESSIBILITY),
                 cost=round(random.uniform(100, 5000), 2),
@@ -230,8 +228,11 @@ def generate_synthetic_data():
                     user_types = random.sample(USER_REQUEST_TYPES, random.randint(0, 2)) if is_user_request else []
                     tech_types = random.sample(TECH_REQUEST_TYPES, random.randint(0, 2)) if is_tech_request else []
                     
+                    request_date = version_date + timedelta(days=random.randint(1, 45))
+                    
                     request = ContextRequest(
                         version_id=version.id,
+                        created_at=request_date,
                         requester=fake.name(),
                         requester_role=random.choice(ROLES),
                         description=generate_request_description(),
@@ -240,7 +241,8 @@ def generate_synthetic_data():
                         planned_improvement=random.choice(PLANNED_IMPROVEMENTS),
                         improvement_type=random.choice(IMPROVEMENT_TYPES),
                         difficulty_level=random.choice(DIFFICULTY_LEVELS),
-                        priority_level=random.choice(PRIORITY_LEVELS)
+                        priority_level=random.choice(PRIORITY_LEVELS),
+                        approved=random.choice(['En attente', 'Approuvé', 'Rejeté'])
                     )
                     db.session.add(request)
                     requests_created += 1
@@ -268,9 +270,6 @@ if __name__ == '__main__':
         print("🎲 GÉNÉRATEUR DE DONNÉES SYNTHÉTIQUES - ProjTrack")
         print("="*60)
         
-        response = input("\n⚠️  Voulez-vous vider la base de données actuelle ? (o/N): ")
-        
-        if response.lower() in ['o', 'oui', 'y', 'yes']:
-            clear_database()
-        
+        # Auto-confirmed
+        clear_database()
         generate_synthetic_data()

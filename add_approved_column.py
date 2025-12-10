@@ -5,7 +5,7 @@ Script de migration pour ajouter la colonne 'approved' à la table context_reque
 import sqlite3
 import os
 
-DB_PATH = 'projects.db'
+DB_PATH = 'instance/projects.db'
 
 def add_approved_column():
     """Ajoute la colonne approved à la table context_request"""

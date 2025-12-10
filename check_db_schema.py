@@ -5,7 +5,7 @@ Script pour vérifier le schéma de la table context_request
 import sqlite3
 import os
 
-DB_PATH = 'projects.db'
+DB_PATH = 'instance/projects.db'
 
 if not os.path.exists(DB_PATH):
     print(f"❌ Base de données '{DB_PATH}' introuvable")

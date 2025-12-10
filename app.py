@@ -168,6 +168,7 @@ class Document(db.Model):
 
 class ContextRequest(db.Model):
     id = db.Column(db.Integer, primary_key=True)
+    created_at = db.Column(db.DateTime, default=datetime.now)
     version_id = db.Column(db.Integer, db.ForeignKey('project_version.id'), nullable=False)
     requester = db.Column(db.String(100))
     requester_role = db.Column(db.String(50))  # New: Client, Manager, Developer, etc.
@@ -530,26 +531,64 @@ def calculate_next_version(current_version_str, improvement_type):
 
 @app.route('/requests')
 def requests_list():
-    # Get project_id from query params for filtering
+    # Filter params
     project_id_filter = request.args.get('project_id', type=int)
-    
-    # Query all requests or filtered by project
+    sort_filter = request.args.get('sort', 'newest')
+    difficulty_filter = request.args.get('difficulty')
+    priority_filter = request.args.get('priority')
+    approved_filter = request.args.get('approved')
+    type_filter = request.args.get('type')
+    version_id_filter = request.args.get('version_id', type=int)
+    role_filter = request.args.get('role')
+
+    # Base query
+    query = db.session.query(ContextRequest, ProjectVersion, Project).join(
+        ProjectVersion, ContextRequest.version_id == ProjectVersion.id
+    ).join(
+        Project, ProjectVersion.project_id == Project.id
+    )
+
+    # Apply filters
     if project_id_filter:
-        requests_query = db.session.query(ContextRequest, ProjectVersion, Project).join(
-            ProjectVersion, ContextRequest.version_id == ProjectVersion.id
-        ).join(
-            Project, ProjectVersion.project_id == Project.id
-        ).filter(Project.id == project_id_filter).all()
+        query = query.filter(Project.id == project_id_filter)
         filter_project = Project.query.get(project_id_filter)
     else:
-        requests_query = db.session.query(ContextRequest, ProjectVersion, Project).join(
-            ProjectVersion, ContextRequest.version_id == ProjectVersion.id
-        ).join(
-            Project, ProjectVersion.project_id == Project.id
-        ).all()
         filter_project = None
+
+    if version_id_filter:
+        query = query.filter(ProjectVersion.id == version_id_filter)
     
-    # Calculate statistics
+    if difficulty_filter and difficulty_filter != 'all':
+        query = query.filter(ContextRequest.difficulty_level == difficulty_filter)
+    
+    if priority_filter and priority_filter != 'all':
+        query = query.filter(ContextRequest.priority_level == priority_filter)
+        
+    if approved_filter and approved_filter != 'all':
+        query = query.filter(ContextRequest.approved == approved_filter)
+        
+    if role_filter and role_filter != 'all':
+        query = query.filter(ContextRequest.requester_role == role_filter)
+
+    if type_filter and type_filter != 'all':
+        # Filter in both type fields (contains string)
+        query = query.filter(db.or_(
+            ContextRequest.user_request_type.contains(type_filter),
+            ContextRequest.tech_request_type.contains(type_filter)
+        ))
+
+    # Apply sorting
+    if sort_filter == 'oldest':
+        query = query.order_by(ContextRequest.created_at.asc())
+    else: # newest
+        query = query.order_by(ContextRequest.created_at.desc())
+
+    requests_query = query.all()
+    
+    # Calculate statistics (based on filtered results or total? Usually total context is better for global stats, 
+    # but the request implies filtering the view. Let's keep stats on the filtered view for relevance 
+    # OR keep stats global? The existing code calculated stats on the query result.
+    # We will stick to calculating stats on the RESULT set.)
     total_requests = len(requests_query)
     
     # Priority stats
@@ -568,9 +607,12 @@ def requests_list():
         if req.approved in approval_stats:
             approval_stats[req.approved] += 1
     
-    # Get all projects for filter dropdown
+    # Get lists for dropdowns
     all_projects = Project.query.all()
-    
+    all_versions = ProjectVersion.query.all() # Optimization: Filter by project if project selected?
+    if project_id_filter:
+        all_versions = ProjectVersion.query.filter_by(project_id=project_id_filter).all()
+
     return render_template('requests.html',
                          requests_data=requests_query,
                          total_requests=total_requests,
@@ -579,7 +621,18 @@ def requests_list():
                          improvement_stats=improvement_stats,
                          approval_stats=approval_stats,
                          all_projects=all_projects,
-                         filter_project=filter_project)
+                         all_versions=all_versions,
+                         filter_project=filter_project,
+                         filters={
+                             'sort': sort_filter,
+                             'difficulty': difficulty_filter,
+                             'priority': priority_filter,
+                             'approved': approved_filter,
+                             'type': type_filter,
+                             'version_id': version_id_filter,
+                             'role': role_filter,
+                             'project_id': project_id_filter
+                         })
 
 @app.route('/projects/<int:id>/edit', methods=['GET', 'POST'])
 def edit_project(id):
@@ -883,7 +936,8 @@ def get_context_request(request_id):
         'improvement_type': context_request.improvement_type,
         'difficulty_level': context_request.difficulty_level,
         'priority_level': context_request.priority_level,
-        'approved': context_request.approved
+        'approved': context_request.approved,
+        'created_at': context_request.created_at.isoformat() if context_request.created_at else None
     })
 
 @app.route('/api/context_request/<int:request_id>', methods=['PUT'])
